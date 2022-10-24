@@ -1,7 +1,9 @@
 // contributed by @madrang
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
+    const VERSION = "0.2.3.3";
     const ID_PREFIX = "madrang-plugin";
+    console.log('%s Version: %s', ID_PREFIX, VERSION);
 
     const MODE_REDO = 'img2img_redo';
     const MODE_RESIZE = 'img2img_resize';
@@ -130,7 +132,7 @@
                 <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br/>
                 <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="200" type="range" min="101" max="400"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br/></div>
                 <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt" style=" width: 100%; height: 65pt;"></textarea>
-                <p><small><b>Tip:</b> You can click on the transparent overlay to close </br> and by holding Ctrl quickly Apply. </small></p>
+                <p><small><b>Tip:</b> You can click on the transparent overlay to close </br> and by holding Ctrl quickly Apply. </br> Edit the prompt to control the alterations. </small></p>
                 <button id="${ID_PREFIX}-popup-apply-btn" class="secondaryButton"><i class="fa-solid fa-check"></i> Apply</button>
             </div>`;
         mainContainer.insertBefore(popupContainer, document.getElementById('save-settings-config'));
@@ -268,13 +270,13 @@
         switch (mode) {
             case MODE_REDO:
                 resolution_container.style.display = 'none';
-                popup_subtitle.textContent = 'Redo the current render with small variations.';
+                popup_subtitle.innerHTML = 'Redo the current render with small variations.';
                 popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
                 popup_totalOutputs.value = 4;
                 break;
             case MODE_RESIZE:
                 resolution_container.style.display = 'block';
-                popup_subtitle.textContent = 'Resize the current render.';
+                popup_subtitle.innerHTML = 'Resize the current render.</br><small>(Will include alterations/mutations.)</small>';
                 popup_parallel.value = 1;
                 popup_totalOutputs.value = 1;
                 popup_scale_slider.value = 200;
