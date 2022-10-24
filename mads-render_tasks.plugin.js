@@ -32,39 +32,39 @@
 
     const style = document.createElement('style');
     style.textContent = `
-    #${ID_PREFIX}-popup {
-        position: fixed;
-        background: rgba(32, 33, 36, 50%);
-        top: 0px;
-        left: 0px;
-        width: 100vw;
-        height: 100vh;
-        z-index: 1000;
-    }
-    #${ID_PREFIX}-popup > div {
-        background: var(--background-color2);
-        max-width: 600px;
-        margin: auto;
-        margin-top: 100px;
-        border-radius: 6px;
-        padding: 30px;
-        text-align: center;
-    }
-    #${ID_PREFIX}-popup-close-btn {
-        float: right;
-        cursor: pointer;
-        padding: 10px;
-        transform: translate(50%, -50%) scaleX(130%);
-    }
-    #${ID_PREFIX}-popup-apply-btn {
-        background: rgb(8 132 0);
-        border: 1px solid rgb(24 122 0);
-    }
-    #${ID_PREFIX}-prompt {
-        width: 100%;
-        height: 65pt;
-    }
-    `;
+#${ID_PREFIX}-popup {
+    position: fixed;
+    background: rgba(32, 33, 36, 50%);
+    top: 0px;
+    left: 0px;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1000;
+}
+#${ID_PREFIX}-popup > div {
+    background: var(--background-color2);
+    max-width: 600px;
+    margin: auto;
+    margin-top: 100px;
+    border-radius: 6px;
+    padding: 30px;
+    text-align: center;
+}
+#${ID_PREFIX}-popup-close-btn {
+    float: right;
+    cursor: pointer;
+    padding: 10px;
+    transform: translate(50%, -50%) scaleX(130%);
+}
+#${ID_PREFIX}-popup-apply-btn {
+    background: rgb(8 132 0);
+    border: 1px solid rgb(24 122 0);
+}
+#${ID_PREFIX}-prompt {
+    width: 100%;
+    height: 65pt;
+}
+`;
     document.head.append(style);
 
     const mainContainer = document.getElementById('container');
