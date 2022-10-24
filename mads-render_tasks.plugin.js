@@ -1,4 +1,4 @@
-/* Madrang's SD-UI Plugin.js
+/* Madrang's SD-UI Render Tasks Plugin.js
  *        DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
  *                    Version 2, December 2004
  *
@@ -288,6 +288,7 @@
                 popup_subtitle.innerHTML = 'Redo the current render with small variations.';
                 popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
                 popup_totalOutputs.value = 4;
+                //defaults.init_image
                 break;
             case MODE_RESIZE:
                 resolution_container.style.display = 'block';
@@ -356,6 +357,8 @@
             , width: popup_width.value
             , height: popup_height.value
             , scale: popup_scale_slider.value / 100
+
+            , compoundChanges: false
         };
         popupCancelled = false;
         return response;
