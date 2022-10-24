@@ -121,7 +121,7 @@
             }
         });
         keepMaxSelect.addEventListener("change", function() {
-            if (keepMaxSelect.value == 'off') {
+            if (!keepMaxSelect.value || keepMaxSelect.value == 'off') {
                 if (intervalPtr !== undefined) {
                     clearInterval(intervalPtr);
                     intervalPtr = undefined;
@@ -130,6 +130,13 @@
             }
             if (intervalPtr == undefined) {
                 intervalPtr = setInterval(function() {
+                    if (!keepMaxSelect.value || keepMaxSelect.value == 'off') {
+                        if (intervalPtr !== undefined) {
+                            clearInterval(intervalPtr);
+                            intervalPtr = undefined;
+                        }
+                        return;
+                    }
                     const keep = parseInt(keepMaxSelect.value);
                     const taskContainers = Array.from(document.querySelectorAll('#preview .imageTaskContainer .taskStatusLabel[style*="display: none;"]')).map((taskLabel) => taskLabel.parentNode);
                     for (const imageTask of taskContainers) {
