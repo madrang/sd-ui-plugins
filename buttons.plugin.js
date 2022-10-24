@@ -216,8 +216,6 @@
     const popup_prompt = document.getElementById(`${ID_PREFIX}-prompt`);
     const resolution_container = document.getElementById(`${ID_PREFIX}-resolution_container`);
 
-    //preview.getElementsByClassName("imageTaskContainer");
-    //<button id="clear-all-previews" class="secondaryButton"><i class="fa-solid fa-trash-can"></i> Clear All</button>
     /*
     canvas = document.createElement('canvas'),
     ctx = canvas.getContext('2d');
