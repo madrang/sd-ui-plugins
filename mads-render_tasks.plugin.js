@@ -372,6 +372,7 @@
             , parallel: popup_parallel.value
             , totalOutputs: popup_totalOutputs.value
 
+            , prompt: popup_prompt.value
             , prompt_strength: popup_promptStrengthField.value
             , guidance_scale: popup_guidanceScaleField.value
 
@@ -396,6 +397,9 @@
             case MODE_RESIZE:
                 if ('guidance_scale' in options) {
                     newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
+                }
+                if ('prompt' in options) {
+                    newTaskRequest.reqBody.prompt = options.prompt;
                 }
                 if (!newTaskRequest.reqBody.init_image || mode === MODE_RESIZE || options.compoundChanges) {
                     newTaskRequest.reqBody.sampler = 'ddim';
