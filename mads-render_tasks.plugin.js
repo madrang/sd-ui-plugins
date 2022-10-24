@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.3.3";
+    const VERSION = "2.3.3.4";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Version: %s', ID_PREFIX, VERSION);
 
@@ -415,7 +415,7 @@
                 if (mode === MODE_RESIZE) {
                     newTaskRequest.reqBody.width = options.width || (reqBody.width * (options.scale || 2));
                     newTaskRequest.reqBody.height = options.height || (reqBody.height * (options.scale || 2));
-                    newTaskRequest.reqBody.num_inference_steps = Math.min(100, options.num_inference_steps || (reqBody.num_inference_steps * (options.scale || 2)));
+                    newTaskRequest.reqBody.num_inference_steps = Math.min(100, options.num_inference_steps || Math.round(reqBody.num_inference_steps * (options.scale || 2)));
                     if (useUpscalingField.checked) {
                         newTaskRequest.reqBody.use_upscale = upscaleModelField.value;
                     } else {
