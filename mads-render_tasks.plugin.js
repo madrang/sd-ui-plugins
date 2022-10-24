@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.3.1";
+    const VERSION = "2.3.3.2";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Version: %s', ID_PREFIX, VERSION);
 
@@ -59,6 +59,10 @@
     #${ID_PREFIX}-popup-apply-btn {
         background: rgb(8 132 0);
         border: 1px solid rgb(24 122 0);
+    }
+    #${ID_PREFIX}-prompt {
+        width: 100%;
+        height: 65pt;
     }
     `;
     document.head.append(style);
@@ -148,7 +152,8 @@
                 <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br/>
                 <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br/>
                 <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="200" type="range" min="101" max="400"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br/></div>
-                <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt" style=" width: 100%; height: 65pt;"></textarea>
+                <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
+                <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt"></textarea>
                 <p><small><b>Tip:</b> You can click on the transparent overlay to close </br> and by holding Ctrl quickly Apply. </br> Edit the prompt to control the alterations. </small></p>
                 <button id="${ID_PREFIX}-popup-apply-btn" class="secondaryButton"><i class="fa-solid fa-check"></i> Apply</button>
             </div>`;
@@ -215,6 +220,9 @@
     const popup_height = document.getElementById(`${ID_PREFIX}-height`);
     const popup_prompt = document.getElementById(`${ID_PREFIX}-prompt`);
     const resolution_container = document.getElementById(`${ID_PREFIX}-resolution_container`);
+
+    const compoundChanges_container = document.getElementById(`${ID_PREFIX}-compoundChanges_container`);
+    const compoundChanges = document.getElementById(`${ID_PREFIX}-compoundChanges`);
 
     /*
     canvas = document.createElement('canvas'),
@@ -288,9 +296,14 @@
                 popup_subtitle.innerHTML = 'Redo the current render with small variations.';
                 popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
                 popup_totalOutputs.value = 4;
-                //defaults.init_image
+                if (defaults.init_image) {
+                    compoundChanges_container.style.display = 'block';
+                } else {
+                    compoundChanges_container.style.display = 'none';
+                }
                 break;
             case MODE_RESIZE:
+                compoundChanges_container.style.display = 'none';
                 resolution_container.style.display = 'block';
                 popup_subtitle.innerHTML = 'Resize the current render.</br><small>(Will include alterations/mutations.)</small>';
                 popup_parallel.value = 1;
@@ -358,7 +371,7 @@
             , height: popup_height.value
             , scale: popup_scale_slider.value / 100
 
-            , compoundChanges: false
+            , compoundChanges: compoundChanges.checked
         };
         popupCancelled = false;
         return response;
@@ -376,11 +389,14 @@
                 if ('guidance_scale' in options) {
                     newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
                 }
-                if (!newTaskRequest.reqBody.init_image || mode === MODE_RESIZE) {
+                if (!newTaskRequest.reqBody.init_image || mode === MODE_RESIZE || options.compoundChanges) {
                     newTaskRequest.reqBody.sampler = 'ddim';
                     newTaskRequest.reqBody.prompt_strength = options.prompt_strength || '0.5';
                     newTaskRequest.reqBody.init_image = img.src;
                     delete newTaskRequest.reqBody.mask;
+                    if (mode !== MODE_RESIZE) {
+                        newTaskRequest.reqBody.seed = Math.floor(Math.random() * 10000000);
+                    }
                 } else {
                     newTaskRequest.reqBody.seed = 1 + newTaskRequest.reqBody.seed;
                 }
