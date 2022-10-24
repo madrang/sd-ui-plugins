@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.3.4";
+    const VERSION = "2.3.3.5";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Version: %s', ID_PREFIX, VERSION);
 
@@ -376,8 +376,8 @@
             , prompt_strength: popup_promptStrengthField.value
             , guidance_scale: popup_guidanceScaleField.value
 
-            , width: popup_width.value
-            , height: popup_height.value
+            , width: round_64(popup_width.value)
+            , height: round_64(popup_height.value)
             , scale: popup_scale_slider.value / 100
 
             , compoundChanges: compoundChanges.checked
@@ -413,8 +413,8 @@
                     newTaskRequest.reqBody.seed = 1 + newTaskRequest.reqBody.seed;
                 }
                 if (mode === MODE_RESIZE) {
-                    newTaskRequest.reqBody.width = options.width || (reqBody.width * (options.scale || 2));
-                    newTaskRequest.reqBody.height = options.height || (reqBody.height * (options.scale || 2));
+                    newTaskRequest.reqBody.width = options.width || round_64(reqBody.width * (options.scale || 2));
+                    newTaskRequest.reqBody.height = options.height || round_64(reqBody.height * (options.scale || 2));
                     newTaskRequest.reqBody.num_inference_steps = Math.min(100, options.num_inference_steps || Math.round(reqBody.num_inference_steps * (options.scale || 2)));
                     if (useUpscalingField.checked) {
                         newTaskRequest.reqBody.use_upscale = upscaleModelField.value;
