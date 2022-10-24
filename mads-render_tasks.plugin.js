@@ -297,6 +297,7 @@
                 popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
                 popup_totalOutputs.value = 4;
                 if (defaults.init_image) {
+                    compoundChanges.checked = true;
                     compoundChanges_container.style.display = 'block';
                 } else {
                     compoundChanges_container.style.display = 'none';
