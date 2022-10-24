@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "0.2.3.3";
+    const VERSION = "2.3.3.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Version: %s', ID_PREFIX, VERSION);
 
