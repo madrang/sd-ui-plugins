@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.3.5";
+    const VERSION = "2.3.3.6";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Version: %s', ID_PREFIX, VERSION);
 
@@ -302,7 +302,11 @@
                 resolution_container.style.display = 'none';
                 popup_subtitle.innerHTML = 'Redo the current render with small variations.';
                 popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
-                popup_totalOutputs.value = 4;
+                if (typeof numOutputsTotalField !== "undefined" && numOutputsTotalField.value && parseInt(numOutputsTotalField.value) > 1) {
+                    popup_totalOutputs.value = numOutputsTotalField.value;
+                } else {
+                    popup_totalOutputs.value = 4;
+                }
                 if (defaults.init_image) {
                     compoundChanges.checked = true;
                     compoundChanges_container.style.display = 'block';
@@ -369,8 +373,8 @@
         const response = {
             cancelled: popupCancelled
 
-            , parallel: popup_parallel.value
-            , totalOutputs: popup_totalOutputs.value
+            , parallel: parseInt(popup_parallel.value)
+            , totalOutputs: parseInt(popup_totalOutputs.value)
 
             , prompt: popup_prompt.value
             , prompt_strength: popup_promptStrengthField.value
