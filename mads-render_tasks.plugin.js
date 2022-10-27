@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.3.6";
+    const VERSION = "2.3.3.7";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Version: %s', ID_PREFIX, VERSION);
 
@@ -160,6 +160,7 @@
                 <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br/>
                 <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="200" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br/></div>
                 <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
+                <div id="${ID_PREFIX}-turbo_container" title="Generates images faster, but uses an additional 1 GB of GPU memory"> <input id="${ID_PREFIX}-turbo" name="turbo" type="checkbox" checked> <label for="turbo">Turbo mode</label> </div>
                 <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt"></textarea>
                 <p><small><b>Tip:</b> You can click on the transparent overlay to close </br> and by holding Ctrl quickly Apply. </br> Edit the prompt to control the alterations. </small></p>
                 <button id="${ID_PREFIX}-popup-apply-btn" class="secondaryButton"><i class="fa-solid fa-check"></i> Apply</button>
@@ -231,6 +232,9 @@
     const compoundChanges_container = document.getElementById(`${ID_PREFIX}-compoundChanges_container`);
     const compoundChanges = document.getElementById(`${ID_PREFIX}-compoundChanges`);
 
+    const popup_turbo = document.getElementById(`${ID_PREFIX}-turbo`);
+    const popup_turbo_container = document.getElementById(`${ID_PREFIX}-turbo_container`);
+
     /*
     canvas = document.createElement('canvas'),
     ctx = canvas.getContext('2d');
@@ -297,6 +301,12 @@
         popup_promptStrengthSlider.value = ('prompt_strength' in defaults ? defaults.prompt_strength * 100 : 50);
         popup_promptStrengthField.value = defaults.prompt_strength || 0.5;
 
+        if (typeof turboField !== "undefined" && typeof turboField.checked === "boolean") {
+            popup_turbo.checked = turboField.checked;
+        } else {
+            popup_turbo.checked = defaults.turbo;
+        }
+
         switch (mode) {
             case MODE_REDO:
                 resolution_container.style.display = 'none';
@@ -313,6 +323,7 @@
                 } else {
                     compoundChanges_container.style.display = 'none';
                 }
+                popup_turbo_container.style.display = 'none';
                 break;
             case MODE_RESIZE:
                 compoundChanges_container.style.display = 'none';
@@ -321,6 +332,7 @@
                 popup_parallel.value = 1;
                 popup_totalOutputs.value = 1;
                 popup_scale_slider.value = 200;
+                popup_turbo_container.style.display = 'block';
                 break;
         }
 
@@ -384,6 +396,7 @@
             , height: round_64(popup_height.value)
             , scale: popup_scale_slider.value / 100
 
+            , turbo: popup_turbo.checked
             , compoundChanges: compoundChanges.checked
         };
         popupCancelled = false;
@@ -396,15 +409,18 @@
         });
         newTaskRequest.numOutputsTotal = options.totalOutputs || 1;
         newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
+        if ('guidance_scale' in options) {
+            newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
+        }
+        if ('prompt' in options) {
+            newTaskRequest.reqBody.prompt = options.prompt;
+        }
+        if ('turbo' in options) {
+            newTaskRequest.reqBody.turbo = options.turbo;
+        }
         switch (mode) {
             case MODE_REDO:
             case MODE_RESIZE:
-                if ('guidance_scale' in options) {
-                    newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
-                }
-                if ('prompt' in options) {
-                    newTaskRequest.reqBody.prompt = options.prompt;
-                }
                 if (!newTaskRequest.reqBody.init_image || mode === MODE_RESIZE || options.compoundChanges) {
                     newTaskRequest.reqBody.sampler = 'ddim';
                     newTaskRequest.reqBody.prompt_strength = options.prompt_strength || '0.5';
