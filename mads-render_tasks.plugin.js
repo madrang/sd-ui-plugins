@@ -237,27 +237,6 @@
     const popup_turbo = document.getElementById(`${ID_PREFIX}-turbo`);
     const popup_turbo_container = document.getElementById(`${ID_PREFIX}-turbo_container`);
 
-    /*
-    canvas = document.createElement('canvas'),
-    ctx = canvas.getContext('2d');
-    ctx.drawImage(image,0,0,400,300);
-    (image, sx, sy, sw, sh, dx, dy, dw, dh);
-
-    const image = new Image(),
-        canvas = document.getElementById('canvas'),
-        ctx = canvas.getContext('2d');
-
-    image.src = 'https://i.stack.imgur.com/I4jXc.png';
-
-    image.addEventListener('load', () => {
-        ctx.drawImage(image,
-            70, 20,   // Start at 70/20 pixels from the left and the top of the image (crop),
-            50, 50,   // "Get" a `50 * 50` (w * h) area from the source image (crop),
-            0, 0,     // Place the result at 0, 0 in the canvas,
-            100, 100); // With as width / height: 100 * 100 (scale)
-    });
-    canvas.toDataURL("image/png")
-    */
    function debounce (func, wait, immediate) {
         if (typeof wait === "undefined") {
             wait = 40;
