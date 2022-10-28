@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.3.7";
+    const VERSION = "2.3.6.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Version: %s', ID_PREFIX, VERSION);
 
@@ -85,10 +85,12 @@
     let popupCancelled = false;
 
     (function() {
-        // Add link to plugin repo.
-        const pluginLink = document.createElement('li');
-        pluginLink.innerHTML = `<a href="${GITHUB_PAGE}" target="_blank"><i class="fa-solid fa-code-merge"></i> Madrang's Plugins on GitHub</a>`;
-        links.appendChild(pluginLink);
+        if (!document.getElementById(`${ID_PREFIX}-link`)) {
+            // Add link to plugin repo.
+            const pluginLink = document.createElement('li');
+            pluginLink.innerHTML = `<a id="${ID_PREFIX}-link" href="${GITHUB_PAGE}" target="_blank"><i class="fa-solid fa-code-merge"></i> Madrang's Plugins on GitHub</a>`;
+            links.appendChild(pluginLink);
+        }
 
         // Max number of tasks to keep.
         keepMaxSelect.style.width = '64px';

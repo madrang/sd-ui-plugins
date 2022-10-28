@@ -1,0 +1,6 @@
+{
+  "start":      "$subject $verb $object."
+  , "subject":  "I | You | They"
+  , "object":   "coffee | bread | milk"
+  , "verb":     "want | hate | like | love"
+}
