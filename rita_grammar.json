@@ -19,7 +19,7 @@
 
   , "color":           "white | red | black | blue | green"
 
-  , "modifiers":       "$modifiers, $modifiers[2] | $emotion | $drawingStyle | $visualStyle | $artist"
+  , "modifiers":       "$modifiers, $modifiers.nr()[2] | $emotion | $drawingStyle | $visualStyle | $artist"
   , "emotion":         "Angry | Bitter | Disgusted | Embarrassed | Evil | Excited | Fear | Funny | Happy | Horrifying | Lonely | Sad | Serene | Surprised | Melancholic"
 
   , "drawingStyle":    "Cel Shading | Children's Drawing | Crosshatch | Detailed and Intricate | Doodle | Dot Art | Line Art | Sketch"

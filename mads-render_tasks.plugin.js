@@ -20,7 +20,7 @@
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
     const VERSION = "2.3.6.1";
     const ID_PREFIX = "madrang-plugin";
-    console.log('%s Version: %s', ID_PREFIX, VERSION);
+    console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
     const MODE_REDO = 'img2img_redo';
     const MODE_RESIZE = 'img2img_resize';

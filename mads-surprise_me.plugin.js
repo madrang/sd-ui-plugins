@@ -20,7 +20,7 @@
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
     const VERSION = "2.3.6.1";
     const ID_PREFIX = "madrang-plugin";
-    console.log('%s Version: %s', ID_PREFIX, VERSION);
+    console.log('%s SurpriseMe! Version: %s', ID_PREFIX, VERSION);
 
     const style = document.createElement('style');
     style.textContent = `
@@ -107,10 +107,10 @@
     function buildRequest(options = {}) {
         const newTaskRequest = modifyCurrentRequest({
             session_id: sessionId
-            , num_outputs: options.parallel || 1
         });
-        newTaskRequest.numOutputsTotal = Math.min(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
-        newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
+        //newTaskRequest.reqBody.num_outputs = options.parallel || 1;
+        //newTaskRequest.numOutputsTotal = Math.min(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
+        //newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
         if ('prompt' in options) {
             newTaskRequest.reqBody.prompt = options.prompt;
         } else {
