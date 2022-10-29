@@ -111,36 +111,19 @@
         });
         newTaskRequest.numOutputsTotal = Math.min(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
         newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
-        if ('guidance_scale' in options) {
-            newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
-        }
         if ('prompt' in options) {
             newTaskRequest.reqBody.prompt = options.prompt;
         } else {
             newTaskRequest.reqBody.prompt = ritaGrammar.expand();
         }
-        if ('turbo' in options) {
-            newTaskRequest.reqBody.turbo = options.turbo;
-        }
-        newTaskRequest.reqBody.sampler = 'euler_a';
+        //newTaskRequest.reqBody.sampler = 'euler_a';
         //newTaskRequest.reqBody.sampler = 'ddim';
-        newTaskRequest.reqBody.prompt_strength = options.prompt_strength || '0.5';
-        //newTaskRequest.reqBody.init_image = img.src;
-        delete newTaskRequest.reqBody.mask;
-        if (true) {
-            newTaskRequest.reqBody.seed = Math.floor(Math.random() * 10000000);
-        } else {
-            newTaskRequest.reqBody.seed = 1 + newTaskRequest.reqBody.seed;
-        }
-        newTaskRequest.reqBody.width = options.width || round_64(512);
-        newTaskRequest.reqBody.height = options.height || round_64(512);
-        newTaskRequest.reqBody.num_inference_steps = Math.min(100, options.num_inference_steps || Math.round(50));
-        if (useUpscalingField.checked) {
-            newTaskRequest.reqBody.use_upscale = upscaleModelField.value;
-        } else {
-            delete newTaskRequest.reqBody.use_upscale;
-        }
-        newTaskRequest.seed = newTaskRequest.reqBody.seed;
+        //if ('guidance_scale' in options) {
+        //    newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
+        //}
+        //newTaskRequest.reqBody.width = options.width || round_64(512);
+        //newTaskRequest.reqBody.height = options.height || round_64(512);
+        //newTaskRequest.reqBody.num_inference_steps = Math.min(100, options.num_inference_steps || Math.round(50));
         return newTaskRequest;
     }
     function getStartNewTaskHandler() {
