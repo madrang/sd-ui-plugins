@@ -109,7 +109,7 @@
             session_id: sessionId
             , num_outputs: options.parallel || 1
         });
-        newTaskRequest.numOutputsTotal = options.totalOutputs || 1;
+        newTaskRequest.numOutputsTotal = Math.min(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
         newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
         if ('guidance_scale' in options) {
             newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
