@@ -20,9 +20,10 @@
 
   , "color":           "white | red | black | blue | green"
 
-  , "modifiers":       "$modifiers, $modifiers.nr()[2] | $emotion | $drawingStyle | $visualStyle | $artist"
+  , "modifiers":       "$modifiers, $modifiers.nr()[3] | $emotion | $colorStyles | $drawingStyle | $visualStyle | $pen | $carving_etching | $camera | $CGI_Software | $CGI_Rendering | $artist"
   , "emotion":         "Angry | Bitter | Disgusted | Embarrassed | Evil | Excited | Fear | Funny | Happy | Horrifying | Lonely | Sad | Serene | Surprised | Melancholic"
 
+  , "colorStyles":     "Beautiful Lighting | Cold Color Palette | Colorful | Dynamic Lighting | Electric Colors | Infrared | Pastel | Neon | Synthwave | Warm Color Palette"
   , "drawingStyle":    "Cel Shading | Children's Drawing | Crosshatch | Detailed and Intricate | Doodle | Dot Art | Line Art | Sketch"
   , "visualStyle":     "2D | 8-Bit | 16-Bit | Anaglyph | Anime | Art Nouveau | Bauhaus | Baroque | CGI | Cartoon | Comic Book | Concept Art | Constructivist | Cubist | Digital Art | Dadaist | Expressionist | Fantasy | Fauvist | Figurative | Graphic Novel | Geometric | Hard Edge Painting | Hydrodipped | Impressionistic | Lithography | Manga | Minimalist | Modern Art | Mosaic | Mural | Naive | Neoclassical | Photo | Realistic | Rococo | Romantic | Street Art | Symbolist | Stuckist | Surrealist | Visual Novel | Watercolor"
 
@@ -30,8 +31,6 @@
   , "carving_etching": "etching | Linocut | Paper Model | Paper-Mache | Papercutting | Pyrography | Wood-Carving"
 
   , "camera":          "Aerial View | Canon50 | Cinematic | Close-up | Color Grading | Dramatic | Film Grain | Fisheye Lens | Glamor Shot | Golden Hour | HD | Landscape | Lens Flare | Macro | Polaroid | Photoshoot | Portrait | Studio Lighting | Vintage | War Photography | White Balance | Wildlife Photography"
-
-  , "colorStyles":     "Beautiful Lighting | Cold Color Palette | Colorful | Dynamic Lighting | Electric Colors | Infrared | Pastel | Neon | Synthwave | Warm Color Palette"
 
   , "CGI_Software":    "3D Model | 3D Sculpt | 3Ds Max Model | Blender Model | Cinema4d Model | Maya Model | Unreal Engine | Zbrush Sculpt"
   , "CGI_Rendering":   "3D Render | Corona Render | Creature Design | Cycles Render | Detailed Render | Environment Design | Intricate Environment | LSD Render | Octane Render | PBR | Glass Caustics | Global Illumination | Subsurface Scattering"
