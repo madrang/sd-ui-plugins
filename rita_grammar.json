@@ -2,11 +2,12 @@
   "start":             "$prompt, $modifiers"
   , "prompt":          "$attribute $subject $verb $object | $type of $place | $attribute $color $object in $place"
 
-  , "subject":         "$people | $object"
-  , "people":          "woman | man | girl | women | men"
-  , "object":          "flowers | clouds | coffee | bread | milk"
+  , "subject":         "$people | $animal | $object"
+  , "people":          "woman | man | girl | women | men | child | kid"
+  , "animal":          "animal | beast | chicken | cat | dog | bird | fish"
+  , "object":          "flowers | clouds | coffee | bread | milk | chair | table"
 
-  , "verb":            "want | hate | like | love"
+  , "verb":            "wanting | hating | liking | loving | throwing | burning | drawing | eating"
 
   , "attribute":      "$quality | $timely"
   , "quality":         "a beautiful | an amazing"

@@ -105,7 +105,7 @@
         return val;
     }
     function buildRequest(options = {}) {
-        const newTaskRequest = modifyCurrentRequest(getCurrentUserRequest(), {
+        const newTaskRequest = modifyCurrentRequest(getCurrentUserRequest(), { //TODO remove getCurrentUserRequest after is fixed upstream.
             session_id: sessionId
         });
         //newTaskRequest.reqBody.num_outputs = options.parallel || 1;
