@@ -79,6 +79,7 @@
     const surpriseMeButton = document.createElement('button');
     surpriseMeButton.id = `${ID_PREFIX}-surpriseMeButton`;
     surpriseMeButton.innerHTML = `Surprise Me!`;
+    surpriseMeButton.title = `V${VERSION}`;
     buttonsContainer.appendChild(surpriseMeButton);
     surpriseMeButton.addEventListener('click', getStartNewTaskHandler());
 

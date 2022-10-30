@@ -50,6 +50,9 @@
     padding: 30px;
     text-align: center;
 }
+#${ID_PREFIX}-popup-title {
+    line-height: 10px;
+}
 #${ID_PREFIX}-popup-close-btn {
     float: right;
     cursor: pointer;
@@ -155,7 +158,7 @@
         popupContainer.innerHTML = `
             <div>
                 <span id="${ID_PREFIX}-popup-close-btn">X</span>
-                <h1 id="${ID_PREFIX}-popup-title">Popup Settings</h1>
+                <h1 id="${ID_PREFIX}-popup-title">Popup Settings<br/><small style="font-size: small;">V${VERSION}</small></h1>
                 <p id="${ID_PREFIX}-popup-subtitle"></p>
                 <label for="${ID_PREFIX}-num_outputs_total">Number of Images:</label> <input id="${ID_PREFIX}-num_outputs_total" name="num_outputs_total" value="1" size="1"> <label><small>(total)</small></label> <input id="${ID_PREFIX}-num_outputs_parallel" name="num_outputs_parallel" value="1" size="1"> <label for="${ID_PREFIX}-num_outputs_parallel"><small>(in parallel)</small></label><br/>
                 <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br/>
@@ -274,7 +277,7 @@
     async function showPopup(mode, defaults = {}) {
         popupCancelled = false;
 
-        popup_title.textContent = `${MODE_DISPLAY_NAMES[mode]} Settings`;
+        popup_title.innerHTML = `${MODE_DISPLAY_NAMES[mode]} Settings<br/><small style="font-size: small;">V${VERSION}</small>`;
 
         popup_guidanceScaleSlider.value = ('guidance_scale' in defaults ? defaults.guidance_scale * 10 : 75);
         popup_guidanceScaleField.value = defaults.guidance_scale || 7.5;
