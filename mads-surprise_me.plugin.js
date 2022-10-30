@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.9.1";
+    const VERSION = "2.3.9.2";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s SurpriseMe! Version: %s', ID_PREFIX, VERSION);
 
@@ -92,6 +92,10 @@
         if (promptField.value == DEFAULT_PROMPT) {
             promptField.value = ritaGrammar.expand();
         }
+        RiTa.addTransform('randRhymes', function(word) { 
+          const res = RiTa.rhymes(word); // get the rhymes
+          return RiTa.random(res);      // append a random one
+        });
     });
     rita_script.src = "/plugins/rita.js";
     document.head.append(rita_script);

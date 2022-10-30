@@ -1,26 +1,26 @@
 {
   "start":             "$prompt, $modifiers"
-  , "prompt":          "$attribute $subject $verb $object | $type of $place | $attribute $color $object in $place"
+  , "prompt":          "$attribute.art().cap() $subject $verb $object.art() | $type.cap() of $place | $attribute.art().cap() $color $object in $place | &#91;$type&#93; $object &#40;$color&#41;:0.3 &#40;$color&#41;:0.6 in &#40;&#40;$place&#41;&#41;"
 
   , "subject":         "$people | $animal | $object"
-  , "people":          "woman | man | girl | women | men | child | kid"
+  , "people":          "woman | man | girl | women | men | child | kid | gnome | dwarf"
   , "animal":          "animal | beast | chicken | cat | dog | bird | fish"
-  , "object":          "flowers | clouds | coffee | bread | milk | chair | table"
+  , "object":          "flower | cloud | coffee | bread | milk | chair | table"
 
   , "verb":            "wanting | hating | liking | loving | throwing | burning | drawing | eating"
 
   , "attribute":      "$quality | $timely"
-  , "quality":         "a beautiful | an amazing"
-  , "timely":          "a new | an old | a young | a modern"
+  , "quality":         "beautiful | amazing"
+  , "timely":          "new | old | young | modern"
 
-  , "place":           "a $placeObject | nature | the sea | an office | mountains"
-  , "placeObject":     "landscape | lake | park | room | home | city | mountain | house | river | forest | kitchen | wall | beach | street | bridge | sea | valley | castle | lighthouse"
+  , "place":           "$placeObject.art() [4] | nature | the sea | the mountains"
+  , "placeObject":     "landscape | lake | park | room | home | city | mountain | house | office | river | forest | kitchen | wall | beach | street | bridge | sea | valley | castle | lighthouse"
 
-  , "type":            "painting | art | photo | print | image | oil painting | portrait | photograph | view | photography | canvas | wallpaper | design | poster | illustration | vintage photo | fantasy | vector"
+  , "type":            "painting | artistic | photo | print | image | oil painting | portrait | photograph | view | photography | canvas | wallpaper | design | poster | illustration | vintage photo | fantasy | vector"
 
   , "color":           "white | red | black | blue | green"
 
-  , "modifiers":       "$modifiers, $modifiers.nr()[3] | $emotion | $colorStyles | $drawingStyle | $visualStyle | $pen | $carving_etching | $camera | $CGI_Software | $CGI_Rendering | $artist"
+  , "modifiers":       "$modifiers, $modifiers.nr() [3] | $emotion | $colorStyles | $drawingStyle | $visualStyle | $pen | $carving_etching | $camera | $CGI_Software | $CGI_Rendering | $artist"
   , "emotion":         "Angry | Bitter | Disgusted | Embarrassed | Evil | Excited | Fear | Funny | Happy | Horrifying | Lonely | Sad | Serene | Surprised | Melancholic"
 
   , "colorStyles":     "Beautiful Lighting | Cold Color Palette | Colorful | Dynamic Lighting | Electric Colors | Infrared | Pastel | Neon | Synthwave | Warm Color Palette"
