@@ -1,4 +1,4 @@
-/* Madrang's SD-UI Render Tasks Plugin.js
+/* Madrang's SD-UI Surprise Me Plugin.js
  *        DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
  *                    Version 2, December 2004
  *
