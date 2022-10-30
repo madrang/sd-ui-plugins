@@ -86,7 +86,8 @@
     //Load RiTa
     const rita_script = document.createElement('script');
     rita_script.addEventListener('load', async function() {
-        const response = await fetch('/plugins/rita_grammar.json?v=' + VERSION);
+        console.log("Loading rita_grammar.json");
+        const response = await fetch("/plugins/rita_grammar.json?v=" + VERSION);
         const rules = await response.json();
         ritaGrammar = RiTa.grammar(rules);
         if (promptField.value == DEFAULT_PROMPT) {
@@ -97,6 +98,7 @@
           return RiTa.random(res);      // append a random one
         });
     });
+    console.log("Loading rita.js");
     rita_script.src = "/plugins/rita.js?v=" + VERSION;
     document.head.append(rita_script);
 
