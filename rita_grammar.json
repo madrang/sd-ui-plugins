@@ -1,29 +1,32 @@
 {
   "start":             "$prompt, $modifiers"
-  , "prompt":          "$attribute.art().cap() $subject $verb $object.art() | $type.cap() of $place | $attribute.art().cap() $color $object in $place | &#91;$type&#93; $object &#40;$color&#41;:0.3 &#40;$color&#41;:0.6 in &#40;&#40;$place&#41;&#41;"
+  , "prompt":          "($attribute.art().cap() $subject [2] | The $mythology) $verb $object.art() | $type.cap() of $place | $attribute.art().cap() $color $object in $place | $subject.art().cap() &#40;$color, $emotion&#41;:0.3 &#40;$color.nr(), $emotion.nr()&#41;:0.6 in &#40;&#40;$place&#41;&#41; (&#91;$type&#93; |)"
 
-  , "subject":         "$people | $character | $animal | $object"
+  , "subject":         "$animal [3] | $character [4] | $people | $object"
+  , "animal":          "animal | basilisk | bat | bear | bird | boar | cat | chicken | cow | dog | dragon | fish | horse | mouse | penguin | pig | phoenix | rat | snake | unicorn"
+  , "character":       "angel | bakeneko | banshee | beast | centaur | chimera | cyclope | demon | dullahan | dwarf | elf | gashadokuro | genie | ghost | gnome | goblin | golem | gremlin | incubus | manananggal | mermaid | nymph | ogre | oni hollow | shawabti | siren | skeleton | spirit | succubus | troll | undead | ushabti | wendigo | werewolf | yūrei | zombie"
   , "people":          "woman | man | girl | women | men | child | kid"
-  , "character":       "gnome | dwarf | goblin | elf | beast"
-  , "animal":          "animal | chicken | cat | dog | bird | fish | horse"
-  , "object":          "flower | cloud | coffee | bread | milk | chair | table"
+  , "mythology":       "Bogeyman | Cerberus | Chupacabra | Devil | Medusa | Sphinx | Sandman | Satan | Shinigami&#40;死神&#41;"
 
-  , "verb":            "wanting | hating | liking | loving | throwing | burning | drawing | eating"
+  , "object":          "flower | cloud | coffee | bread | milk | chair | table | automaton"
+
+  , "verb":            "wanting | hating | liking | loving | throwing | burning | drawing | eating | riding | punching | fighting"
 
   , "attribute":      "$quality | $timely"
   , "quality":         "beautiful | amazing | horrible | scary | calm"
   , "timely":          "new | old | young | modern | vintage"
 
-  , "place":           "$placeObject.art() [4] | nature | the sea | the mountains"
-  , "placeObject":     "landscape | lake | park | room | home | city | mountain | house | office | river | forest | kitchen | wall | beach | street | bridge | sea | valley | castle | lighthouse"
+  , "place":           "$placeObject.art() [4] | $placeFantasy | nature | the sea | the mountains"
+  , "placeObject":     "landscape | lake | park | room | home | city | mountain | house | office | river | forest | kitchen | wall | beach | street | bridge | valley | castle | lighthouse"
+  , "placeFantasy":   "the Underworld | Hell | Heaven | the Matrix | dream"
 
-  , "type":            "painting | artistic | photo | print | image | oil painting | portrait | photograph | view | photography | canvas | wallpaper | design | poster | illustration | vintage photo | fantasy | vector"
+  , "type":            "painting | artistic interpretation | photo | print | image | oil painting | portrait | photograph | view | photography | canvas | wallpaper | design | poster | illustration | vintage photo | fantasy | vector"
 
-  , "color":           "$colorFancy | black | white | red | blue | green | yellow | cyan | magenta | pink | purple | brown | orange"
+  , "color":           "$colorFancy [2] | black | white | red | blue | green | yellow | cyan | magenta | pink | purple | brown | orange"
   , "colorFancy":      "aero | alizarin | almond | amber | amethyst | aqua | aureolin | beige | bistre | bronze | burgundy | byzantine | carnelian | catawba | celadon | cerulean | charcoal | cinereous | citrine"
 
-  , "modifiers":       "$modifiers, $modifiers.nr() [3] | $emotion | $colorStyles | $drawingStyle | $visualStyle | $pen | $carving_etching | $camera | $CGI_Software | $CGI_Rendering | $artist"
-  , "emotion":         "Angry | Bitter | Disgusted | Embarrassed | Evil | Excited | Fear | Funny | Happy | Horrifying | Lonely | Sad | Serene | Surprised | Melancholic"
+  , "modifiers":       "$modifiers, $modifiers.nr() [3] | $emotion.cap() | $colorStyles | $drawingStyle | $visualStyle | $pen | $carving_etching | $camera | $CGI_Software | $CGI_Rendering | $artist"
+  , "emotion":         "angry | bitter | disgusted | embarrassed | evil | excited | fear | funny | happy | horrifying | lonely | sad | serene | surprised | melancholic"
 
   , "colorStyles":     "Beautiful Lighting | Cold Color Palette | Colorful | Dynamic Lighting | Electric Colors | Infrared | Pastel | Neon | Synthwave | Warm Color Palette"
   , "drawingStyle":    "Cel Shading | Children's Drawing | Crosshatch | Detailed and Intricate | Doodle | Dot Art | Line Art | Sketch"
