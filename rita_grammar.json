@@ -1,14 +1,15 @@
 {
   "start":             "$prompt, $modifiers"
-  , "prompt":          "($attribute.art().cap() $subject [2] | The $mythology) $verb $object.art() | $type.cap() of $place | $attribute.art().cap() $color $object in $place | $subject.art().cap() &#40;$color, $emotion&#41;:0.3 &#40;$color.nr(), $emotion.nr()&#41;:0.6 in &#40;&#40;$place&#41;&#41; (&#91;$type&#93; |)"
+  , "prompt":          "((($attribute [2] |[4]) $subject).art().cap() [4] | The $mythology [2] | $peopleName) $verb $object.art() | (($attribute [2] |[4]) $type).art().cap() of $place | $attribute.art().cap() $color $object in $place | $subject.art().cap() &#40;($color, $emotion [2] | $color [3] | $emotion)&#41;:0.3 &#40;($color.nr(), $emotion.nr() [2] | $color.nr() [3] | $emotion.nr())&#41;:0.6 in &#40;&#40;$place&#41;&#41; (&#91;$type&#93; |)"
 
   , "subject":         "$animal [3] | $character [4] | $people | $object"
   , "animal":          "animal | basilisk | bat | bear | bird | boar | cat | chicken | cow | dog | dragon | fish | horse | mouse | penguin | pig | phoenix | rat | snake | unicorn"
-  , "character":       "angel | bakeneko | banshee | beast | centaur | chimera | cyclope | demon | dullahan | dwarf | elf | gashadokuro | genie | ghost | gnome | goblin | golem | gremlin | incubus | manananggal | mermaid | nymph | ogre | oni hollow | shawabti | siren | skeleton | spirit | succubus | troll | undead | ushabti | wendigo | werewolf | yūrei | zombie"
+  , "character":       "angel | bakeneko | banshee | beast | centaur | chimera | cyclope | demon | dullahan | dwarf | elf | gashadokuro | genie | ghost | gnome | goblin | golem | gremlin | incubus | manananggal | mermaid | nymph | ogre | oni hollow | shawabti | siren | skeleton | spirit | succubus | troll | undead | ushabti | wendigo | werewolf | yeti | yūrei | zombie"
   , "people":          "woman | man | girl | women | men | child | kid"
-  , "mythology":       "Bogeyman | Cerberus | Chupacabra | Devil | Medusa | Sphinx | Sandman | Satan | Shinigami&#40;死神&#41;"
+  , "mythology":       "Bogeyman | Cerberus | Chupacabra | Devil | Medusa | Sphinx | Sandman | Shinigami&#40;死神&#41;"
+  , "peopleName":      "Al Pacino | Amy Adams | Angela Bassett | Angelina Jolie | Anthony Hopkins | Antonio Banderas | Arnold Schwarzenegger | Audrey Hepburn | Ben Kingsley | Ben Stiller | Bette Davis | Bill Murray | Brad Pitt | Bruce Lee | Bruce Willis | Cary Grant | Cate Blanchett | Catherine Deneuve | Chadwick Boseman | Charles Chaplin | Christopher Walken | Clark Gable | Clint Eastwood | Daniel Day-Lewis | Demi Moore | Denzel Washington | Diane Keaton | Don Cheadle | Donald Sutherland | Doris Day | Drew Barrymore | Edward Montgomery Clift (Monty |) | Elizabeth Taylor | Emma Thompson | Forest Whitaker | Grace Kelly | Gregory Peck | Greta Garbo | Halle Berry | Harrison Ford | Helen Mirren | Henry Fonda | Humphrey Bogart | Ingrid Bergman | Isabelle Huppert | Jack Nicholson | James Cagney | James Dean | James Stewart | Jeff Bridges | Jim Carrey | Joaquin Phoenix | Jodie Foster | John Wayne | Johnny Depp | Judy Garland | Julia Roberts | Julie Andrews | Kate Winslet | Katharine Hepburn | Kevin Costner | Kirk Douglas | Laurence Olivier | Leonardo DiCaprio | Lucy Liu | Marilyn Monroe | Mark Wahlberg | Marlon Brando | Mel Gibson | Meryl Streep | Morgan Freeman | Nicolas Cage | Nicole Kidman | Olivia de Havilland | Paul Newman | Penélope Cruz | Rita Hayworth | Robert De Niro | Robert Downey Jr. | Robin Williams | Russell Crowe | Salma Hayek | Samuel L. Jackson | Sandra Bullock | Satan | Sean Connery | Setsuko Hara | Shah Rukh Khan | Sharon Stone | Sidney Poitier | Sigourney Weaver | Sophia Loren | Spencer Tracy | Steve Martin | Steve McQueen | Sylvester Stallone | Tom Cruise | Tom Hanks | Tommy Lee Jones | Toshirô Mifune | Viggo Mortensen | Viola Davis | Vivien Leigh | Whoopi Goldberg | Will Smith | Willem Dafoe"
 
-  , "object":          "flower | cloud | coffee | bread | milk | chair | table | automaton"
+  , "object":          "automaton | bike | book | bread | cactus | cloud | coffee | chair | clock | cigar | door | flower | lawnmower | lightsaber | milk | pencil | pickle | pie | pillow | portal | potato | puzzle | rubber duck | stapler | table | thermos"
 
   , "verb":            "wanting | hating | liking | loving | throwing | burning | drawing | eating | riding | punching | fighting"
 
@@ -20,7 +21,7 @@
   , "placeObject":     "landscape | lake | park | room | home | city | mountain | house | office | river | forest | kitchen | wall | beach | street | bridge | valley | castle | lighthouse"
   , "placeFantasy":   "the Underworld | Hell | Heaven | the Matrix | dream"
 
-  , "type":            "painting | artistic interpretation | photo | print | image | oil painting | portrait | photograph | view | photography | canvas | wallpaper | design | poster | illustration | vintage photo | fantasy | vector"
+  , "type":            "painting | artistic interpretation | photo | print | image | oil painting | portrait | photograph | view | photography | canvas | wallpaper | design | poster | illustration | vector drawing | dream | mirage | hologram"
 
   , "color":           "$colorFancy [2] | black | white | red | blue | green | yellow | cyan | magenta | pink | purple | brown | orange"
   , "colorFancy":      "aero | alizarin | almond | amber | amethyst | aqua | aureolin | beige | bistre | bronze | burgundy | byzantine | carnelian | catawba | celadon | cerulean | charcoal | cinereous | citrine"
