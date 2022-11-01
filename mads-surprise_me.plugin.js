@@ -24,38 +24,9 @@
 
     const style = document.createElement('style');
     style.textContent = `
-#${ID_PREFIX}-popup {
-    position: fixed;
-    background: rgba(32, 33, 36, 50%);
-    top: 0px;
-    left: 0px;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1000;
-}
-#${ID_PREFIX}-popup > div {
-    background: var(--background-color2);
-    max-width: 600px;
-    margin: auto;
-    margin-top: 100px;
-    border-radius: 6px;
-    padding: 30px;
-    text-align: center;
-}
-#${ID_PREFIX}-popup-close-btn {
-    float: right;
-    cursor: pointer;
-    padding: 10px;
-    transform: translate(50%, -50%) scaleX(130%);
-}
-#${ID_PREFIX}-popup-apply-btn {
-    background: rgb(8 132 0);
-    border: 1px solid rgb(24 122 0);
-}
-#${ID_PREFIX}-prompt {
-    width: 100%;
-    height: 65pt;
-}
+    #${ID_PREFIX}-surpriseMeButton {
+        margin-top: 8px;
+    }
 `;
     document.head.append(style);
     (function() {
@@ -83,20 +54,54 @@
     buttonsContainer.appendChild(surpriseMeButton);
     surpriseMeButton.addEventListener('click', getStartNewTaskHandler());
 
+    const getRandomInt = function (min, max) {
+        //The maximum is exclusive and the minimum is inclusive
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min)) + min;
+    };
+    const getRandomObj = function (...args) {
+        if (typeof args === "undefined" || !Array.isArray(args) || args.length <= 0) {
+            return undefined;
+        }
+        if (args.length === 1 && Array.isArray(args[0])) {
+            // If single item array at pos zero.
+            args = args[0];
+        }
+        return args[getRandomInt(0, args.length)];
+    };
+
     //Load RiTa
     const rita_script = document.createElement('script');
     rita_script.addEventListener('load', async function() {
+        RiTa.addTransform('aug', function(words) { // Augment strength of statement.
+            return `&#40;${words.trim()}&#41;`;
+        });
+        RiTa.addTransform('dec', function(words) { // Decrease strength of statement.
+            return `&#91;${words.trim()}&#93;`;
+        });
+        RiTa.addTransform('rnd', function(word) { // Get random words
+            // Uses postags - https://rednoise.org/rita/reference/postags.html
+            const words = RiTa.randomWord({ pos: getRandomObj(word.split(' ')).trim() });
+            return getRandomObj(words);
+        });
+        RiTa.addTransform('rym', function(words) { // Get random rhymes
+            const resultText = [];
+            for (const word of words.split(' ')) {
+                const res = RiTa.rhymes(word); // get the rhymes
+                resultText.append(RiTa.random(res));      // append a random one
+            }
+            return resultText.join(' ');
+        });
+
         console.log("Loading rita_grammar.json");
         const response = await fetch("/plugins/rita_grammar.json?v=" + VERSION);
         const rules = await response.json();
+
         ritaGrammar = RiTa.grammar(rules);
         if (promptField.value == DEFAULT_PROMPT) {
             promptField.value = ritaGrammar.expand();
         }
-        RiTa.addTransform('randRhymes', function(word) { 
-          const res = RiTa.rhymes(word); // get the rhymes
-          return RiTa.random(res);      // append a random one
-        });
     });
     console.log("Loading rita.js");
     rita_script.src = "/plugins/rita.js?v=" + VERSION;
