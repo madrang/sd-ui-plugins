@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.9.2";
+    const VERSION = "2.3.9.3";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s SurpriseMe! Version: %s', ID_PREFIX, VERSION);
 
@@ -73,6 +73,11 @@
 
     //Load RiTa
     const rita_script = document.createElement('script');
+    rita_script.addEventListener('error', function() {
+        surpriseMeButton.innerHTML = `ERR: Missing rita!`;
+        surpriseMeButton.title = `Make sure that rita.js is present and valid.`;
+        surpriseMeButton.disabled = true;
+    });
     rita_script.addEventListener('load', async function() {
         RiTa.addTransform('aug', function(words) { // Augment strength of statement.
             return `&#40;${words.trim()}&#41;`;
@@ -80,29 +85,55 @@
         RiTa.addTransform('dec', function(words) { // Decrease strength of statement.
             return `&#91;${words.trim()}&#93;`;
         });
-        RiTa.addTransform('rnd', function(word) { // Get random words
+        RiTa.addTransform('rnd', function(words) { // Get a random words.
             // Uses postags - https://rednoise.org/rita/reference/postags.html
-            const words = RiTa.randomWord({ pos: getRandomObj(word.split(' ')).trim() });
-            return getRandomObj(words);
+            const wTokens = RiTa.tokenize(words);
+            const rndWords = RiTa.randomWord({ pos: getRandomObj(wTokens) });
+            return getRandomObj(rndWords);
         });
-        RiTa.addTransform('rym', function(words) { // Get random rhymes
-            const resultText = [];
-            for (const word of words.split(' ')) {
-                const res = RiTa.rhymes(word); // get the rhymes
-                resultText.append(RiTa.random(res));      // append a random one
+        const isNumbersRe = new RegExp('^\\d+$');
+        RiTa.addTransform('rym', function(words) { // Replace words by random rhymes.
+            const tokens = RiTa.tokenize(words);
+            let stride = 1;
+            if (tokens.length > 0 && isNumbersRe.test(tokens[0])) {
+                const elm = tokens.shift();
+                stride = parseInt(elm);
             }
-            return resultText.join(' ');
+            const resultText = [];
+            let count = stride;
+            for (const token of tokens) {
+                if (RiTa.isPunct(token)) {
+                    resultText.append(token);
+                    continue;
+                }
+                count--;
+                if (count > 0) {
+                    resultText.append(token);
+                    continue;
+                }
+                count = stride;
+                const rhymes = RiTa.rhymes(token);
+                resultText.append(getRandomObj(rhymes));
+            }
+            return RiTa.untokenize(resultText);
         });
+        try{
+            console.log("Loading rita_grammar.json");
+            const response = await fetch("/plugins/rita_grammar.json?v=" + VERSION);
+            const rules = await response.json();
 
-        console.log("Loading rita_grammar.json");
-        const response = await fetch("/plugins/rita_grammar.json?v=" + VERSION);
-        const rules = await response.json();
-
-        ritaGrammar = RiTa.grammar(rules);
-        if (promptField.value == DEFAULT_PROMPT) {
-            promptField.value = ritaGrammar.expand();
+            ritaGrammar = RiTa.grammar(rules);
+            if (promptField.value == DEFAULT_PROMPT) {
+                promptField.value = ritaGrammar.expand();
+            }
+        } catch(e) {
+            surpriseMeButton.innerHTML = `ERR: Invalid grammar!`;
+            surpriseMeButton.title = `Make sure that rita_grammar.json is present and valid.`;
+            surpriseMeButton.disabled = true;
+            console.error(e);
         }
     });
+    rita_script.type='text/javascript';
     console.log("Loading rita.js");
     rita_script.src = "/plugins/rita.js?v=" + VERSION;
     document.head.append(rita_script);
