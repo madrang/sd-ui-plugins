@@ -85,6 +85,28 @@
         RiTa.addTransform('dec', function(words) { // Decrease strength of statement.
             return `&#91;${words.trim()}&#93;`;
         });
+
+        RiTa.addTransform('cnv', function(words) { // Conjugate Verb.
+            const tokens = RiTa.tokenize(words);
+            const options = {
+                tense: RiTa.PRESENT
+                , number: RiTa.SINGULAR
+                , person: RiTa.THIRD
+            };
+            let verb = 'swim';
+            for (token of tokens) {
+                //  a r u  options.tense:    [RiTa.PAST, RiTa.PRESENT, or RiTa.FUTURE]
+                //   s p   options.number:   [RiTa.SINGULAR or RiTa.PLURAL]
+                //  i e h  options.person:   [RiTa.FIRST, RiTa.SECOND or RiTa.THIRD]
+                //   n g   options.form:     [RiTa.INFINITIVE or RiTa.GERUND]
+                //    A    options.passive        {boolean}
+                //    R    options.progressive    {boolean}
+                //    N    options.interrogative  {boolean}
+                //    E    options.perfect        {boolean}
+            }
+            RiTa.conjugate(verb, options);
+        });
+
         RiTa.addTransform('rnd', function(words) { // Get a random words.
             // Uses postags - https://rednoise.org/rita/reference/postags.html
             const wTokens = RiTa.tokenize(words);
@@ -133,7 +155,7 @@
             console.error(e);
         }
     });
-    rita_script.type='text/javascript';
+    rita_script.type = 'text/javascript';
     console.log("Loading rita.js");
     rita_script.src = "/plugins/rita.js?v=" + VERSION;
     document.head.append(rita_script);

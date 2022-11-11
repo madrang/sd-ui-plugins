@@ -373,8 +373,8 @@
             , totalOutputs: parseInt(popup_totalOutputs.value)
 
             , prompt: popup_prompt.value
-            , prompt_strength: popup_promptStrengthField.value
-            , guidance_scale: popup_guidanceScaleField.value
+            , prompt_strength: parseFloat(popup_promptStrengthField.value)
+            , guidance_scale: parseFloat(popup_guidanceScaleField.value)
 
             , width: round_64(popup_width.value)
             , height: round_64(popup_height.value)
