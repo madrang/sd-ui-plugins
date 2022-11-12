@@ -41,7 +41,7 @@
         const pluginLink = document.createElement('li');
         const options = {
             'stopSpecOnExpectationFailure': "true"
-            , 'stopOnSpecFailure': 'true'
+            , 'stopOnSpecFailure': 'false'
             , 'random': 'false'
             , 'hideDisabled': 'false'
         }

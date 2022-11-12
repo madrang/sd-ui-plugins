@@ -1014,51 +1014,6 @@
             return await asyncDelay(1000)
         }
         return await Promise.race(promises)
-
-        let successCount = 0
-        task.isProcessing = true
-
-        const genSeeds = Boolean(typeof task.reqBody.seed !== 'number' || (task.reqBody.seed === task.seed && task.numOutputsTotal > 1))
-        const startSeed = task.reqBody.seed || task.seed
-        for (let i = 0; i < task.batchCount; i++) {
-            let newTask = task
-            if (task.batchCount > 1) {
-                // Each output render batch needs it's own task instance to avoid altering the other runs after they are completed.
-                newTask = Object.assign({}, task, {
-                    reqBody: Object.assign({}, task.reqBody)
-                })
-            }
-            if (genSeeds) {
-                newTask.reqBody.seed = parseInt(startSeed) + (i * newTask.reqBody.num_outputs)
-                newTask.seed = newTask.reqBody.seed
-            } else if (newTask.seed !== newTask.reqBody.seed) {
-                newTask.seed = newTask.reqBody.seed
-            }
-
-            let success = await doMakeImage(newTask)
-            task.batchesDone++
-
-            if (!task.isProcessing || !success) {
-                break
-            }
-
-            if (success) {
-                successCount++
-            }
-        }
-
-        task.isProcessing = false
-
-        time = Date.now() - time
-        time /= 1000
-
-        if (successCount === task.batchCount) {
-            //setStatus('request', 'done', 'success')
-        } else {
-            if (task.outputMsg.innerText.toLowerCase().indexOf('error') === -1) {
-                task.outputMsg.innerText = 'Task ended after ' + time + ' seconds'
-            }
-        }
     }
     let taskPromise = undefined
     function startCheck() {
