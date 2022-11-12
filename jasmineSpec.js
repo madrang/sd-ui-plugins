@@ -60,7 +60,7 @@ describe('stable-diffusion-ui', function() {
             task._setStatus(SD.TaskStatus.completed)
         }).toThrowError();
     });
-    it('should be able to run concurent tasks', async function() {
+    it('should be able to run tasks', async function() {
         expect(typeof SD.Task.run).toBe('function')
         const promiseGenerator = (function*(val) {
             expect(val).toBe('start')
@@ -76,7 +76,7 @@ describe('stable-diffusion-ui', function() {
         }
         expect(await SD.Task.run(promiseGenerator, {callback})).toBe(32)
     });
-    it('should be able to queue concurent tasks', async function() {
+    it('should be able to queue tasks', async function() {
         expect(typeof SD.Task.enqueue).toBe('function')
         const promiseGenerator = (function*(val) {
             expect(val).toBe('start')
@@ -92,6 +92,34 @@ describe('stable-diffusion-ui', function() {
         }
         const gen = SD.Task.asGenerator({generator: promiseGenerator, callback})
         expect(await SD.Task.enqueue(gen)).toBe(32)
+    });
+    it('should be able to chain handlers', async function() {
+        expect(typeof SD.Task.enqueue).toBe('function')
+        const promiseGenerator = (function*(val) {
+            expect(val).toBe('start')
+            expect(yield {test: '1'}).toEqual({test: '1', foo: 'bar'})
+            expect(yield 2 + 2).toEqual(8)
+            yield asyncDelay(500)
+            expect(yield 3 + 3).toEqual(12)
+            expect(yield {test: 4}).toEqual({test: 8, foo: 'bar'})
+            return {test: 8}
+        })('start')
+        const gen1 = SD.Task.asGenerator({generator: promiseGenerator, callback: function({value, done}) {
+            if (typeof value === "object") {
+                value['foo'] = 'bar'
+            }
+            return {value, done}
+        }})
+        const gen2 = SD.Task.asGenerator({generator: gen1, callback: function({value, done}) {
+            if (typeof value === 'number') {
+                value = 2 * value
+            }
+            if (typeof value === 'object' && typeof value.test === 'number') {
+                value.test = 2 * value.test
+            }
+            return {value, done}
+        }})
+        expect(await SD.Task.enqueue(gen2)).toEqual({test:32, foo: 'bar'})
     });
 
     it('should be able to stream data in chunks', async function() {

@@ -637,7 +637,7 @@
             } while(!done && !signal?.aborted && timeout > Date.now())
             return value
         }
-        static *asGenerator({callback, generator, signal, timeout=-1}={}) {
+        static async *asGenerator({callback, generator, signal, timeout=-1}={}) {
             let value = undefined
             let done = undefined
             if (timeout < 0) {
@@ -645,16 +645,17 @@
             }
             timeout = Date.now() + timeout
             do {
-                ({value, done} = yield generator.next(value))
+                ({value, done} = await Promise.resolve(generator.next(value)))
                 if (value instanceof Promise) {
-                    value = yield value
+                    value = await value
                 }
                 if (callback) {
-                    ({value, done} = yield callback.call(generator, {value, done}))
+                    ({value, done} = await Promise.resolve(callback.call(generator, {value, done})))
+                    if (value instanceof Promise) {
+                        value = await value
+                    }
                 }
-                if (value instanceof Promise) {
-                    value = yield value
-                }
+                value = yield value
             } while(!done && !signal?.aborted && timeout > Date.now())
             return value
         }
@@ -1017,12 +1018,15 @@
     }
     let taskPromise = undefined
     function startCheck() {
-        if (taskPromise && taskPromise.isRejected) {
-            fireEvent(null, 'error', taskPromise.rejectReason)
-            taskPromise = makeQuerablePromise(asyncDelay(4000))
-        } else if (!taskPromise?.isPending) {
-            taskPromise = makeQuerablePromise(continueTasks())
+        if (taskPromise?.isPending) {
+            return
         }
+        const continuePromise = continueTasks().catch(async function(err) {
+            console.error(err)
+            fireEvent(null, 'error', err)
+            await asyncDelay(4000)
+        })
+        taskPromise = makeQuerablePromise(continuePromise)
     }
 
     const SD = {
