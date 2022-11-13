@@ -153,8 +153,8 @@ describe('stable-diffusion-ui', function() {
                 , "show_only_filtered_image": true
                 , "output_format": "jpeg"
 
-                //, "session_id": SD.sessionId
-                , "session_id": JASMINE_SESSION_ID
+                , "session_id": SD.sessionId
+                //, "session_id": JASMINE_SESSION_ID
             }),
         })
         expect(res.ok).toBeTruthy();
