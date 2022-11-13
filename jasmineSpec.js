@@ -1,6 +1,6 @@
 "use strict";
 
-JASMINE_SESSION_ID = 'jasmine'
+const JASMINE_SESSION_ID = 'jasmine'
 
 beforeEach(function () {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 15 * 60 * 1000; // Test timeout after 15 minutes
