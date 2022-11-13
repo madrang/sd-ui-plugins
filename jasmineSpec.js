@@ -5,14 +5,11 @@ const JASMINE_SESSION_ID = 'jasmine'
 beforeEach(function () {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 15 * 60 * 1000; // Test timeout after 15 minutes
     jasmine.addMatchers({
-        toBePlaying: function () {
-            // demonstrates use of custom matcher
-            //expect(player).toBePlaying(song);
+        toBeOneOf: function () {
             return {
                 compare: function (actual, expected) {
-                    const player = actual;
                     return {
-                        pass: player.currentlyPlayingSong === expected && player.isPlaying
+                        pass: expected.includes(actual)
                     };
                 }
             };
@@ -27,6 +24,7 @@ describe('stable-diffusion-ui', function() {
     });
     it('should be able to reach the backend', async function() {
         expect(SD.serverState.status).toBe(SD.ServerStates.unavailable)
+        SD.sessionId = JASMINE_SESSION_ID
         await SD.init();
         expect(SD.isServerAvailable()).toBeTrue();
     });
@@ -153,8 +151,7 @@ describe('stable-diffusion-ui', function() {
                 , "show_only_filtered_image": true
                 , "output_format": "jpeg"
 
-                , "session_id": SD.sessionId
-                //, "session_id": JASMINE_SESSION_ID
+                , "session_id": JASMINE_SESSION_ID
             }),
         })
         expect(res.ok).toBeTruthy();
@@ -165,7 +162,7 @@ describe('stable-diffusion-ui', function() {
         // Wait for server status to update.
         await SD.waitUntil(() => {
             console.log('Waiting for %s to be received...', renderRequest.task)
-            return SD.serverState.task === renderRequest.task
+            return (!SD.serverState.task || SD.serverState.task === renderRequest.task)
         }, 250, 10 * 60 * 1000)
         // Wait for task to start on server.
         await SD.waitUntil(() => {
