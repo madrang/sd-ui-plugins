@@ -1,5 +1,7 @@
 "use strict";
 
+JASMINE_SESSION_ID = 'jasmine'
+
 beforeEach(function () {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 15 * 60 * 1000; // Test timeout after 15 minutes
     jasmine.addMatchers({
@@ -32,27 +34,32 @@ describe('stable-diffusion-ui', function() {
     it('enfore the current task state', function() {
         const task = new SD.Task()
         expect(task.status).toBe(SD.TaskStatus.init);
+        expect(task.isPending).toBeTrue();
 
         task._setStatus(SD.TaskStatus.pending)
         expect(task.status).toBe(SD.TaskStatus.pending);
+        expect(task.isPending).toBeTrue();
         expect(function() {
             task._setStatus(SD.TaskStatus.init)
         }).toThrowError();
 
         task._setStatus(SD.TaskStatus.waiting)
         expect(task.status).toBe(SD.TaskStatus.waiting);
+        expect(task.isPending).toBeTrue();
         expect(function() {
             task._setStatus(SD.TaskStatus.pending)
         }).toThrowError();
 
         task._setStatus(SD.TaskStatus.processing)
         expect(task.status).toBe(SD.TaskStatus.processing);
+        expect(task.isPending).toBeTrue();
         expect(function() {
             task._setStatus(SD.TaskStatus.pending)
         }).toThrowError();
 
         task._setStatus(SD.TaskStatus.failed)
         expect(task.status).toBe(SD.TaskStatus.failed);
+        expect(task.isPending).toBeFalse();
         expect(function() {
             task._setStatus(SD.TaskStatus.processing)
         }).toThrowError();
@@ -121,7 +128,6 @@ describe('stable-diffusion-ui', function() {
         }})
         expect(await SD.Task.enqueue(gen2)).toEqual({test:32, foo: 'bar'})
     });
-
     it('should be able to stream data in chunks', async function() {
         expect(SD.isServerAvailable()).toBeTrue();
         const nbr_steps = 15
@@ -147,7 +153,8 @@ describe('stable-diffusion-ui', function() {
                 , "show_only_filtered_image": true
                 , "output_format": "jpeg"
 
-                , "session_id": SD.sessionId
+                //, "session_id": SD.sessionId
+                , "session_id": JASMINE_SESSION_ID
             }),
         })
         expect(res.ok).toBeTruthy();
@@ -226,6 +233,7 @@ describe('stable-diffusion-ui', function() {
                 , "show_only_filtered_image": false
                 //, "use_face_correction": 'GFPGANv1.3'
                 , "use_upscale": "RealESRGAN_x4plus"
+                , "session_id": JASMINE_SESSION_ID
             }, function(event) {
                 console.log(this, event)
                 if ('update' in event) {
@@ -254,6 +262,7 @@ describe('stable-diffusion-ui', function() {
                 , "height": 128
                 , "seed": SD.MAX_SEED_VALUE
                 , "num_inference_steps": 10
+                , "session_id": JASMINE_SESSION_ID
             })
             expect(renderTask.status).toBe(SD.TaskStatus.init)
 
@@ -298,6 +307,7 @@ describe('stable-diffusion-ui', function() {
                 , "show_only_filtered_image": false
                 //, "use_face_correction": 'GFPGANv1.3'
                 , "use_upscale": "RealESRGAN_x4plus"
+                , "session_id": JASMINE_SESSION_ID
             })
             await renderTask.enqueue(function(event) {
                 console.log(this, event)
@@ -321,7 +331,6 @@ describe('stable-diffusion-ui', function() {
             expect(renderTask.result.output).toHaveSize(2)
         });
     });
-
     describe('#special cases', function() {
         it('should throw an exception on set for invalid sessionId', function() {
             expect(function() {
