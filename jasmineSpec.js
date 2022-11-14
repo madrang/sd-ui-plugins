@@ -1,6 +1,6 @@
 "use strict";
 
-const JASMINE_SESSION_ID = 'jasmine'
+const JASMINE_SESSION_ID = `jasmine-${String(Date.now()).slice(8)}`
 
 beforeEach(function () {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 15 * 60 * 1000; // Test timeout after 15 minutes
