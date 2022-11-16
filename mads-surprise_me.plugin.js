@@ -141,7 +141,7 @@
         });
         try{
             console.log("Loading rita_grammar.json");
-            const response = await fetch("/plugins/rita_grammar.json?v=" + VERSION);
+            const response = await fetch("/plugins/user/rita_grammar.json?v=" + VERSION);
             const rules = await response.json();
 
             ritaGrammar = RiTa.grammar(rules);
@@ -157,7 +157,7 @@
     });
     rita_script.type = 'text/javascript';
     console.log("Loading rita.js");
-    rita_script.src = "/plugins/rita.js?v=" + VERSION;
+    rita_script.src = "/plugins/user/rita.js?v=" + VERSION;
     document.head.append(rita_script);
 
     function round_64(val) {
