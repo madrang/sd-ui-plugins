@@ -1,5 +1,6 @@
 {
-  "start":             "$prompt, $modifiers"
+  "version":           "2.4.6.0"
+  , "start":           "$prompt, $modifiers"
   , "prompt":          "((($attribute [2] |[4]) $subject).art().cap() [4] | The $mythology [2] | $peopleName | $mythName) ($verb [2] | (vbg).rnd()) $object.art() | (($attribute [2] |[4]) $type).art().cap() of $place | $attribute.art().cap() $color $object in $place | $subject.art().cap() (($color, $emotion [2] | $color [3] | $emotion):0.3).aug() (($color.nr(), $emotion.nr() [2] | $color.nr() [3] | $emotion.nr()):0.6).aug() in $place.aug().aug() ($type.dec() |)"
 
   , "subject":         "$animal [3] | $character [4] | $people | $object"
