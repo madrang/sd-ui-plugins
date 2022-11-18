@@ -22,6 +22,9 @@
     const ID_PREFIX = "madrang-plugin";
     const THEME_KEY = 'theme-mads';
     const THEME_NAME = "Mads Theme";
+    if (typeof THEMES !== "object") {
+        return
+    }
     console.log('%s Theme! Version: %s', ID_PREFIX, VERSION);
 
     const style = document.createElement('style');
