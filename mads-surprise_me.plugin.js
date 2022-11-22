@@ -18,8 +18,9 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.9.3";
+    const VERSION = "2.4.7.1";
     const ID_PREFIX = "madrang-plugin";
+    const RITA_VERSION = "2.8.31.1"
     console.log('%s SurpriseMe! Version: %s', ID_PREFIX, VERSION);
 
     const style = document.createElement('style');
@@ -45,12 +46,12 @@
 
     const buttonsContainer = document.createElement('div');
     buttonsContainer.id = `${ID_PREFIX}-surpriseContainer`;
-    editorInputs.appendChild(buttonsContainer);
+    editorInputs?.appendChild(buttonsContainer);
 
     const surpriseMeButton = document.createElement('button');
     surpriseMeButton.id = `${ID_PREFIX}-surpriseMeButton`;
     surpriseMeButton.innerHTML = `Surprise Me!`;
-    surpriseMeButton.title = `V${VERSION}`;
+    surpriseMeButton.title = `V${VERSION} - Loading...`;
     buttonsContainer.appendChild(surpriseMeButton);
     surpriseMeButton.addEventListener('click', getStartNewTaskHandler());
 
@@ -70,6 +71,96 @@
         }
         return args[getRandomInt(0, args.length)];
     };
+    const randomFloat = function(min, max, fixedLen) {
+        min = parseFloat(min);
+        max = parseFloat(max);
+        fixedLen = parseInt(fixedLen);
+        return (min + Math.random() * (max - min)).toFixed(fixedLen);
+    };
+
+    const parseVersion = function(versionString, options = {}) {
+        if (typeof versionString === "undefined") {
+            throw new Error("versionString is undefined.");
+        }
+        if (typeof versionString !== "string") {
+            throw new Error("versionString is not a string.");
+        }
+        const lexicographical = options && options.lexicographical;
+        const zeroExtend = options && options.zeroExtend;
+        let versionParts = versionString.split('.');
+        function isValidPart(x) {
+            const re = (lexicographical ? /^\d+[A-Za-z]*$/ : /^\d+$/);
+            return re.test(x);
+        }
+
+        if (!versionParts.every(isValidPart)) {
+            throw new Error("Version string is invalid.");
+        }
+
+        if (zeroExtend) {
+            while (versionParts.length < 4) {
+                versionParts.push("0");
+            }
+        }
+        if (!lexicographical) {
+            versionParts = versionParts.map(Number);
+        }
+        return versionParts;
+    };
+
+    const versionCompare = function(v1, v2, options = {}) {
+        if (typeof v1 == "undefined") {
+            throw new Error("vi is undefined.");
+        }
+        if (typeof v2 === "undefined") {
+            throw new Error("v2 is undefined.");
+        }
+
+        let v1parts;
+        if (typeof v1 === "string") {
+            v1parts = parseVersion(v1, options);
+        } else if (Array.isArray(v1)) {
+            v1parts = [...v1];
+            if (!v1parts.every (p => typeof p === "number" && p !== NaN)) {
+                throw new Error("v1 part array does not only contains numbers.");
+            }
+        } else {
+            throw new Error("v1 is of an unexpected type: " + typeof v1);
+        }
+
+        let v2parts;
+        if (typeof v2 === "string") {
+            v2parts = parseVersion(v2, options);
+        } else if (Array.isArray(v2)) {
+            v2parts = [...v2];
+            if (!v2parts.every(p => typeof p === "number" && p !== NaN)) {
+                throw new Error("v2 part array does not only contains numbers.");
+            }
+        } else {
+            throw new Error("v2 is of an unexpected type: " + typeof v2);
+        }
+
+        while (v1parts.length < v2parts.length) {
+            v1parts.push("0");
+        }
+        while (v2parts.length < v1parts.length) {
+            v2parts.push("0");
+        }
+
+        for (let i = 0; i < v1parts.length; ++i) {
+            if (v2parts.length == i) {
+                return 1;
+            }
+            if (v1parts[i] == v2parts[i]) {
+                continue;
+            } else if (v1parts[i] > v2parts[i]) {
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+        return 0;
+    };
 
     //Load RiTa
     const rita_script = document.createElement('script');
@@ -79,6 +170,12 @@
         surpriseMeButton.disabled = true;
     });
     rita_script.addEventListener('load', async function() {
+        if (versionCompare(RITA_VERSION, RiTa.VERSION) < 0) {
+            const errMsg = `[RiTa.js V${RiTa.VERSION}] Doesn't match expected version ${RITA_VERSION}!`;
+            console.error(errMsg);
+            surpriseMeButton.title = `SurpriseMe V${VERSION} - ${errMsg}`;
+            surpriseMeButton.style.backgroundColor = '#DD0000';
+        }
         RiTa.addTransform('aug', function(words) { // Augment strength of statement.
             return `&#40;${words.trim()}&#41;`;
         });
@@ -107,7 +204,12 @@
             RiTa.conjugate(verb, options);
         });
 
+        const reRndNums = /(\d+|\d+\.\d+)(?:\\|\/)(\d+|\d+\.\d+)\:(\d+)/;
         RiTa.addTransform('rnd', function(words) { // Get a random words.
+            const match = reRndNums.exec(words);
+            if (match) {
+                return `${randomFloat(match[1], match[2], match[3])}`
+            }
             // Uses postags - https://rednoise.org/rita/reference/postags.html
             const wTokens = RiTa.tokenize(words);
             const rndWords = RiTa.randomWord({ pos: getRandomObj(wTokens) });
@@ -141,13 +243,31 @@
         });
         try{
             console.log("Loading rita_grammar.json");
-            const response = await fetch("/plugins/user/rita_grammar.json?v=" + VERSION);
+            const response = await fetch("/plugins/user/rita_grammar.json?v=" + Date.now());
             const rules = await response.json();
-
             ritaGrammar = RiTa.grammar(rules);
-            if (promptField.value == DEFAULT_PROMPT) {
-                promptField.value = ritaGrammar.expand();
+
+            const grammarVersion = ritaGrammar.expand('version');
+            if (!grammarVersion) {
+                const errMsg = `[RiTa.js V${RITA_VERSION}] No grammar version found!`;
+                console.error(errMsg);
+                surpriseMeButton.title = `SurpriseMe V${VERSION} - ${errMsg}`;
+                surpriseMeButton.style.backgroundColor = '#DD0000';
+            } else if (versionCompare(RITA_VERSION, grammarVersion) < 0) {
+                const msg = `[RiTa.js V${RITA_VERSION}] Grammar ${grammarVersion} version mismatch.`;
+                console.warn(msg);
+                surpriseMeButton.title = `SurpriseMe V${VERSION} - ${msg}`;
+                surpriseMeButton.style.backgroundColor = '#DDDD00';
+            } else {
+                const msg = `[RiTa.js V${RITA_VERSION}] Grammar version: ${grammarVersion}`;
+                console.log(msg);
+                surpriseMeButton.title = `SurpriseMe V${VERSION} - ${msg}`;
             }
+
+            if (typeof promptField !== 'object' || promptField.value !== DEFAULT_PROMPT) {
+                return;
+            }
+            promptField.value = ritaGrammar.expand();
         } catch(e) {
             surpriseMeButton.innerHTML = `ERR: Invalid grammar!`;
             surpriseMeButton.title = `Make sure that rita_grammar.json is present and valid.`;
@@ -201,6 +321,17 @@
             const newTaskRequest = buildRequest(options);
             createTask(newTaskRequest);
             initialText.style.display = 'none';
+        }
+    }
+
+    // Register selftests when loaded by jasmine.
+    if (typeof PLUGINS?.SELFTEST === 'object') {
+        PLUGINS.SELFTEST[ID_PREFIX + " surprise"] = function() {
+            it('should be able to run a test...', function() {
+                expect(function() {
+                    SD.sessionId = undefined
+                }).toThrowError("Can't set sessionId to undefined.")
+            })
         }
     }
 })();
