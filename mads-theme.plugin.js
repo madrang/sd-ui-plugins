@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.7.1";
+    const VERSION = "2.4.15.1";
     const ID_PREFIX = "madrang-plugin";
     const THEME_KEY = 'theme-mads';
     const THEME_NAME = "Mads Theme";
@@ -61,6 +61,8 @@ input[type=button]:hover {
     --input-background-color: var(--background-color3);
     --input-text-color: #FF2B2B;
     --input-border-color: var(--background-color4);
+
+    --theme-color-fallback: #850000;
 }
 `;
     document.head.append(style);
@@ -76,7 +78,7 @@ input[type=button]:hover {
     THEMES.push({
         key: THEME_KEY,
         name: THEME_NAME,
-        rule: style.sheet.cssRules
+        rule: Array.from(style.sheet.cssRules).find((rule) => rule.selectorText.startsWith(".theme-") && !rule.selectorText.includes(" "))
     })
     const newThemeOption = document.createElement("option");
     newThemeOption.setAttribute("value", THEME_KEY);
