@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.15.1";
+    const VERSION = "2.4.15.2";
     const ID_PREFIX = "madrang-plugin";
     const THEME_KEY = 'theme-mads';
     const THEME_NAME = "Mads Theme";
@@ -29,12 +29,6 @@
 
     const style = document.createElement('style');
     style.textContent = `
-#makeImage:hover {
-    background: hsl(var(--accent-hue), var(--accent-saturation-hover), calc(var(--accent-lightness) + 6%));
-}
-input[type=button]:hover {
-    background-color: var(--accent-color-hover);
-}
 .${THEME_KEY} {
     --main-hue: 0;
     --main-saturation: 50%;
@@ -48,13 +42,14 @@ input[type=button]:hover {
     --accent-hue: 314;
     --accent-saturation: 50%;
     --accent-lightness: 36%;
-    --accent-saturation-hover: 55%;
-    --accent-lightness-hover: 36%;
     --accent-color: hsl(var(--accent-hue), var(--accent-saturation), var(--accent-lightness));
+    --accent-saturation-hover: 55%;
+    --accent-lightness-hover: 45%;
     --accent-color-hover: hsl(var(--accent-hue), var(--accent-saturation-hover), var(--accent-lightness-hover));
 
     --primary-button-border: none;
     --button-color: var(--accent-color);
+    --button-text-color: #FFFFFF;
     --button-border: none;
 
     --input-border-size: 1px;
@@ -63,6 +58,24 @@ input[type=button]:hover {
     --input-border-color: var(--background-color4);
 
     --theme-color-fallback: #850000;
+}
+.${THEME_KEY} #makeImage:hover {
+    background: var(--accent-color-hover);
+}
+.${THEME_KEY} .input-toggle > input:checked + label {
+    background: #550000;
+}
+.${THEME_KEY} button:hover {
+    background-color: var(--accent-color-hover);
+}
+.${THEME_KEY} input[type=button]:hover {
+    background-color: var(--accent-color-hover);
+}
+.${THEME_KEY} input[type="range"] {
+    accent-color: #880000;
+}
+.${THEME_KEY} a {
+    color: rgb(204, 0, 0);
 }
 `;
     document.head.append(style);
