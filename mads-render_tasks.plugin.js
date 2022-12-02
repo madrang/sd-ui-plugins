@@ -86,33 +86,37 @@
     popupContainer.id = `${ID_PREFIX}-popup`;
 
     let popupCancelled = false;
-
     (function() {
-        if (!document.getElementById(`${ID_PREFIX}-link`)) {
+        if (links && !document.getElementById(`${ID_PREFIX}-link`)) {
             // Add link to plugin repo.
             const pluginLink = document.createElement('li');
             pluginLink.innerHTML = `<a id="${ID_PREFIX}-link" href="${GITHUB_PAGE}" target="_blank"><i class="fa-solid fa-code-merge"></i> Madrang's Plugins on GitHub</a>`;
             links.appendChild(pluginLink);
         }
+        if (!mainContainer) {
+            return
+        }
 
         // Max number of tasks to keep.
-        keepMaxSelect.style.width = '64px';
-        const datalist = document.createElement('datalist');
-        datalist.id = 'keep-max-datalist';
-        document.body.appendChild(datalist);
-        ['off', 4, 8, 16, 32, 64].forEach(function(data) {
-            const option = document.createElement('option');
-            option.value = data;
-            datalist.appendChild(option);
-        });
-        keepMaxSelect.setAttribute('type', 'text');
-        keepMaxSelect.setAttribute('list','keep-max-datalist');
-        keepMaxSelect.value = 'off';
-        const keepLabel = document.createElement('label');
-        keepLabel.innerText = "Auto-Remove after "
-        keepLabel.appendChild(keepMaxSelect);
-        keepLabel.insertAdjacentText('beforeend', ' completed tasks.');
-        toolsMenu.appendChild(keepLabel);
+        if (toolsMenu) {
+            keepMaxSelect.style.width = '64px';
+            const datalist = document.createElement('datalist');
+            datalist.id = 'keep-max-datalist';
+            document.body.appendChild(datalist);
+            ['off', 4, 8, 16, 32, 64].forEach(function(data) {
+                const option = document.createElement('option');
+                option.value = data;
+                datalist.appendChild(option);
+            });
+            keepMaxSelect.setAttribute('type', 'text');
+            keepMaxSelect.setAttribute('list','keep-max-datalist');
+            keepMaxSelect.value = 'off';
+            const keepLabel = document.createElement('label');
+            keepLabel.innerText = "Auto-Remove after "
+            keepLabel.appendChild(keepMaxSelect);
+            keepLabel.insertAdjacentText('beforeend', ' completed tasks.');
+            toolsMenu.appendChild(keepLabel);
+        }
         let intervalPtr = undefined;
         let keepOldVar = keepMaxSelect.value;
         keepMaxSelect.addEventListener("click", function() {
@@ -143,7 +147,12 @@
                         return;
                     }
                     const keep = parseInt(keepMaxSelect.value);
-                    const taskContainers = Array.from(document.querySelectorAll('#preview .imageTaskContainer .taskStatusLabel[style*="display: none;"]')).map((taskLabel) => taskLabel.parentNode);
+                    const taskContainers = Array.from(document.querySelectorAll('#preview .imageTaskContainer .taskStatusLabel[style*="display: none;"]')).map((taskLabel) => {
+                        while(preview !== taskLabel.parentNode && taskLabel.parentNode) {
+                            taskLabel = taskLabel.parentNode;
+                        }
+                        return taskLabel;
+                    });
                     for (const imageTask of taskContainers) {
                         if (taskContainers.indexOf(imageTask) < keep) {
                             continue;
@@ -441,6 +450,17 @@
             }
             const newTaskRequest = buildRequest(mode, reqBody, img, options);
             createTask(newTaskRequest);
+        }
+    }
+
+    // Register selftests when loaded by jasmine.
+    if (typeof PLUGINS?.SELFTEST === 'object') {
+        PLUGINS.SELFTEST[ID_PREFIX + " render tasks"] = function() {
+            it('should be able to run a test...', function() {
+                expect(function() {
+                    SD.sessionId = undefined
+                }).toThrowError("Can't set sessionId to undefined.")
+            })
         }
     }
 })();
