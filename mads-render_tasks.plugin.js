@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.3.9.1";
+    const VERSION = "2.4.6.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
@@ -86,6 +86,7 @@
     popupContainer.id = `${ID_PREFIX}-popup`;
 
     let popupCancelled = false;
+    let showPopup = async (mode, defaults = {}) => {}
     (function() {
         if (links && !document.getElementById(`${ID_PREFIX}-link`)) {
             // Add link to plugin repo.
@@ -198,82 +199,239 @@
             popupContainer.style.display = 'none';
             popupCancelled = false;
         });
-    })();
-    const popup_title = document.getElementById(`${ID_PREFIX}-popup-title`);
-    const popup_subtitle = document.getElementById(`${ID_PREFIX}-popup-subtitle`);
 
-    const popup_parallel = document.getElementById(`${ID_PREFIX}-num_outputs_parallel`);
-    const popup_totalOutputs = document.getElementById(`${ID_PREFIX}-num_outputs_total`);
+        const popup_title = document.getElementById(`${ID_PREFIX}-popup-title`);
+        const popup_subtitle = document.getElementById(`${ID_PREFIX}-popup-subtitle`);
 
-    const popup_guidanceScaleSlider = document.getElementById(`${ID_PREFIX}-guidance_scale_slider`);
-    const popup_guidanceScaleField = document.getElementById(`${ID_PREFIX}-guidance_scale`);
-    popup_guidanceScaleSlider.addEventListener('input', function() {
-        popup_guidanceScaleField.value = popup_guidanceScaleSlider.value / 10;
-    });
-    popup_guidanceScaleField.addEventListener('input', function() {
-        if (popup_guidanceScaleField.value < 0) {
-            popup_guidanceScaleField.value = 0;
-        } else if (popup_guidanceScaleField.value > 50) {
-            popup_guidanceScaleField.value = 50;
-        }
+        const popup_parallel = document.getElementById(`${ID_PREFIX}-num_outputs_parallel`);
+        const popup_totalOutputs = document.getElementById(`${ID_PREFIX}-num_outputs_total`);
 
-        popup_guidanceScaleSlider.value = popup_guidanceScaleField.value * 10;
-    });
-    popup_guidanceScaleSlider.dispatchEvent(new Event("input"));
-
-    const popup_promptStrengthSlider = document.getElementById(`${ID_PREFIX}-prompt_strength_slider`);
-    const popup_promptStrengthField = document.getElementById(`${ID_PREFIX}-prompt_strength`);
-    popup_promptStrengthSlider.addEventListener('input', function() {
-        popup_promptStrengthField.value = popup_promptStrengthSlider.value / 100;
-    });
-    popup_promptStrengthField.addEventListener('input', function() {
-        if (popup_promptStrengthField.value < 0) {
-            popup_promptStrengthField.value = 0;
-        } else if (popup_promptStrengthField.value > 0.99) {
-            popup_promptStrengthField.value = 0.99;
-        }
-
-        popup_promptStrengthSlider.value = popup_promptStrengthField.value * 100;
-    });
-    popup_promptStrengthSlider.dispatchEvent(new Event("input"));
-
-    const popup_scale_slider = document.getElementById(`${ID_PREFIX}-scale_slider`);
-    const popup_width = document.getElementById(`${ID_PREFIX}-width`);
-    const popup_height = document.getElementById(`${ID_PREFIX}-height`);
-    const popup_prompt = document.getElementById(`${ID_PREFIX}-prompt`);
-    const resolution_container = document.getElementById(`${ID_PREFIX}-resolution_container`);
-
-    const compoundChanges_container = document.getElementById(`${ID_PREFIX}-compoundChanges_container`);
-    const compoundChanges = document.getElementById(`${ID_PREFIX}-compoundChanges`);
-
-    const popup_turbo = document.getElementById(`${ID_PREFIX}-turbo`);
-    const popup_turbo_container = document.getElementById(`${ID_PREFIX}-turbo_container`);
-
-   function debounce (func, wait, immediate) {
-        if (typeof wait === "undefined") {
-            wait = 40;
-        }
-        if (typeof wait !== "number") {
-            throw new Error("wait is not an number.");
-        }
-        let timeout = null;
-        return function(...args) {
-            const context = this;
-            const callNow = Boolean(immediate) && !timeout;
-            if (timeout) {
-                clearTimeout(timeout);
+        const popup_guidanceScaleSlider = document.getElementById(`${ID_PREFIX}-guidance_scale_slider`);
+        const popup_guidanceScaleField = document.getElementById(`${ID_PREFIX}-guidance_scale`);
+        popup_guidanceScaleSlider.addEventListener('input', function() {
+            popup_guidanceScaleField.value = popup_guidanceScaleSlider.value / 10;
+        });
+        popup_guidanceScaleField.addEventListener('input', function() {
+            if (popup_guidanceScaleField.value < 0) {
+                popup_guidanceScaleField.value = 0;
+            } else if (popup_guidanceScaleField.value > 50) {
+                popup_guidanceScaleField.value = 50;
             }
-            timeout = setTimeout(function () {
-                timeout = null;
-                if (!immediate) {
-                    func.apply(context, args);
+
+            popup_guidanceScaleSlider.value = popup_guidanceScaleField.value * 10;
+        });
+        popup_guidanceScaleSlider.dispatchEvent(new Event("input"));
+
+        const popup_promptStrengthSlider = document.getElementById(`${ID_PREFIX}-prompt_strength_slider`);
+        const popup_promptStrengthField = document.getElementById(`${ID_PREFIX}-prompt_strength`);
+        popup_promptStrengthSlider.addEventListener('input', function() {
+            popup_promptStrengthField.value = popup_promptStrengthSlider.value / 100;
+        });
+        popup_promptStrengthField.addEventListener('input', function() {
+            if (popup_promptStrengthField.value < 0) {
+                popup_promptStrengthField.value = 0;
+            } else if (popup_promptStrengthField.value > 0.99) {
+                popup_promptStrengthField.value = 0.99;
+            }
+
+            popup_promptStrengthSlider.value = popup_promptStrengthField.value * 100;
+        });
+        popup_promptStrengthSlider.dispatchEvent(new Event("input"));
+
+        const popup_scale_slider = document.getElementById(`${ID_PREFIX}-scale_slider`);
+        const popup_width = document.getElementById(`${ID_PREFIX}-width`);
+        const popup_height = document.getElementById(`${ID_PREFIX}-height`);
+        const popup_prompt = document.getElementById(`${ID_PREFIX}-prompt`);
+        const resolution_container = document.getElementById(`${ID_PREFIX}-resolution_container`);
+
+        const compoundChanges_container = document.getElementById(`${ID_PREFIX}-compoundChanges_container`);
+        const compoundChanges = document.getElementById(`${ID_PREFIX}-compoundChanges`);
+
+        const popup_turbo = document.getElementById(`${ID_PREFIX}-turbo`);
+        const popup_turbo_container = document.getElementById(`${ID_PREFIX}-turbo_container`);
+
+        showPopup = async (mode, defaults = {}) => {
+            popupCancelled = false;
+
+            popup_title.innerHTML = `${MODE_DISPLAY_NAMES[mode]} Settings<br/><small style="font-size: small;">V${VERSION}</small>`;
+
+            popup_guidanceScaleSlider.value = ('guidance_scale' in defaults ? defaults.guidance_scale * 10 : 75);
+            popup_guidanceScaleField.value = defaults.guidance_scale || 7.5;
+
+            popup_promptStrengthSlider.value = ('prompt_strength' in defaults ? defaults.prompt_strength * 100 : 50);
+            popup_promptStrengthField.value = defaults.prompt_strength || 0.5;
+
+            if (typeof turboField !== "undefined" && typeof turboField.checked === "boolean") {
+                popup_turbo.checked = turboField.checked;
+            } else {
+                popup_turbo.checked = defaults.turbo;
+            }
+
+            switch (mode) {
+                case MODE_REDO:
+                    resolution_container.style.display = 'none';
+                    popup_subtitle.innerHTML = 'Redo the current render with small variations.';
+                    popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
+                    if (typeof numOutputsTotalField !== "undefined" && numOutputsTotalField.value && parseInt(numOutputsTotalField.value) > 1) {
+                        popup_totalOutputs.value = numOutputsTotalField.value;
+                    } else {
+                        popup_totalOutputs.value = 4;
+                    }
+                    if (defaults.init_image) {
+                        compoundChanges.checked = true;
+                        compoundChanges_container.style.display = 'block';
+                    } else {
+                        compoundChanges_container.style.display = 'none';
+                    }
+                    popup_turbo_container.style.display = 'none';
+                    break;
+                case MODE_RESIZE:
+                    compoundChanges_container.style.display = 'none';
+                    resolution_container.style.display = 'block';
+                    popup_subtitle.innerHTML = 'Resize the current render.</br><small>(Will include alterations/mutations.)</small>';
+                    popup_parallel.value = 1;
+                    popup_totalOutputs.value = 1;
+                    popup_scale_slider.value = 200;
+                    popup_turbo_container.style.display = 'block';
+                    break;
+            }
+
+            let width = defaults.width;
+            popup_width.value = width * (popup_scale_slider.value / 100);
+            let height = defaults.height;
+            popup_height.value = height * (popup_scale_slider.value / 100);
+            const setResolutionFields = function() {
+                popup_width.value = round_64(width * (popup_scale_slider.value / 100));
+                popup_height.value = round_64(height * (popup_scale_slider.value / 100));
+            };
+            const setResolutionSlider = function() {
+                const ratio = ((popup_width.value / width) + (popup_height.value / height)) / 2;
+                width = popup_width.value / ratio;
+                height = popup_height.value / ratio;
+                popup_scale_slider.value = ratio * 100;
+            };
+
+            const set_width = debounce(function() {
+                const tmp_width = round_64(popup_width.value);
+                if (tmp_width != popup_width.value) {
+                    popup_width.value = tmp_width;
                 }
-            }, wait);
-            if (callNow) {
-                func.apply(context, args);
+                setResolutionSlider();
+            }, 1000, false);
+            const set_height = debounce(function() {
+                const tmp_height = round_64(popup_height.value);
+                if (tmp_height != popup_height.value) {
+                    popup_height.value = tmp_height;
+                }
+                setResolutionSlider();
+            }, 1000, false);
+
+            popup_prompt.value = defaults.prompt;
+
+            try {
+                popup_scale_slider.addEventListener('input', setResolutionFields);
+                popup_width.addEventListener('input', set_width);
+                popup_height.addEventListener('input', set_height);
+                // Display popup
+                popupContainer.style.display = 'block';
+                while (window.getComputedStyle(popupContainer).display !== "none") {
+                    await asyncDelay(1000);
+                }
+            } finally {
+                popup_scale_slider.removeEventListener('input', setResolutionFields);
+                popup_width.removeEventListener('input', set_width);
+                popup_height.removeEventListener('input', set_height);
             }
-        };
+            const response = {
+                cancelled: popupCancelled
+
+                , parallel: parseInt(popup_parallel.value)
+                , totalOutputs: parseInt(popup_totalOutputs.value)
+
+                , prompt: popup_prompt.value
+                , prompt_strength: parseFloat(popup_promptStrengthField.value)
+                , guidance_scale: parseFloat(popup_guidanceScaleField.value)
+
+                , width: round_64(popup_width.value)
+                , height: round_64(popup_height.value)
+                , scale: popup_scale_slider.value / 100
+
+                , turbo: popup_turbo.checked
+                , compoundChanges: compoundChanges.checked
+            };
+            popupCancelled = false;
+            return response;
+        }
+    })();
+
+    function getImg(src) {
+        return new Promise(function(resolve, reject) {
+            try {
+                if (src.data instanceof HTMLImageElement
+                    || src.data instanceof SVGImageElement
+                    || src.data instanceof HTMLCanvasElement
+                    || src.data instanceof ImageBitmap
+                ) {
+                    throw new Error('Not implemtented...')
+                }
+                const image = new Image();
+                image.addEventListener('load', () => resolve(image));
+                image.addEventListener('error', () => reject(new Error('Failed to load image.')));
+                image.src = src.url || src.data;
+            } catch (e) {
+                reject(e);
+            }
+        });
     }
+
+    function copyImg(ctx, src, dest={}) {
+        return new Promise(function(resolve, reject) {
+            const drawImage = function(image) {
+                ctx.drawImage(image
+                    , src.x || 0, src.y || 0
+                    , src.w || src.width || image.naturalWidth
+                    , src.h || src.height || image.naturalHeight
+                    , dest.x || 0, dest.y || 0
+                    , dest.w || dest.width || ctx.width || ctx.canvas.width
+                    , dest.h || dest.height || ctx.height || ctx.canvas.height
+                );
+                resolve(image);
+            }
+            try {
+                if (src.data instanceof HTMLImageElement
+                    || src.data instanceof SVGImageElement
+                    || src.data instanceof HTMLCanvasElement
+                    || src.data instanceof ImageBitmap
+                ) {
+                    drawImage(src.data);
+                    return;
+                }
+                const image = new Image();
+                image.addEventListener('load', () => drawImage(image));
+                image.addEventListener('error', () => reject(new Error('Failed to load image.')));
+                image.src = src.url || src.data;
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
+    async function goBig(img) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const newTaskRequest = modifyCurrentRequest(reqBody, {
+            num_outputs: options.parallel || 1
+        });
+        newTaskRequest.numOutputsTotal = Math.max(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
+        newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
+
+        await copyImg(ctx, {data:img.src}, {});
+        newTaskRequest.reqBody.init_image = canvas.toDataURL("image/png")
+        await doMakeImage(task);
+
+        return canvas.toDataURL("image/png");
+    }
+
     function round_64(val) {
         val = Math.round(val);
         const left = val % 64;
@@ -282,118 +440,6 @@
             return val + 64;
         }
         return val;
-    }
-    async function showPopup(mode, defaults = {}) {
-        popupCancelled = false;
-
-        popup_title.innerHTML = `${MODE_DISPLAY_NAMES[mode]} Settings<br/><small style="font-size: small;">V${VERSION}</small>`;
-
-        popup_guidanceScaleSlider.value = ('guidance_scale' in defaults ? defaults.guidance_scale * 10 : 75);
-        popup_guidanceScaleField.value = defaults.guidance_scale || 7.5;
-
-        popup_promptStrengthSlider.value = ('prompt_strength' in defaults ? defaults.prompt_strength * 100 : 50);
-        popup_promptStrengthField.value = defaults.prompt_strength || 0.5;
-
-        if (typeof turboField !== "undefined" && typeof turboField.checked === "boolean") {
-            popup_turbo.checked = turboField.checked;
-        } else {
-            popup_turbo.checked = defaults.turbo;
-        }
-
-        switch (mode) {
-            case MODE_REDO:
-                resolution_container.style.display = 'none';
-                popup_subtitle.innerHTML = 'Redo the current render with small variations.';
-                popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
-                if (typeof numOutputsTotalField !== "undefined" && numOutputsTotalField.value && parseInt(numOutputsTotalField.value) > 1) {
-                    popup_totalOutputs.value = numOutputsTotalField.value;
-                } else {
-                    popup_totalOutputs.value = 4;
-                }
-                if (defaults.init_image) {
-                    compoundChanges.checked = true;
-                    compoundChanges_container.style.display = 'block';
-                } else {
-                    compoundChanges_container.style.display = 'none';
-                }
-                popup_turbo_container.style.display = 'none';
-                break;
-            case MODE_RESIZE:
-                compoundChanges_container.style.display = 'none';
-                resolution_container.style.display = 'block';
-                popup_subtitle.innerHTML = 'Resize the current render.</br><small>(Will include alterations/mutations.)</small>';
-                popup_parallel.value = 1;
-                popup_totalOutputs.value = 1;
-                popup_scale_slider.value = 200;
-                popup_turbo_container.style.display = 'block';
-                break;
-        }
-
-        let width = defaults.width;
-        popup_width.value = width * (popup_scale_slider.value / 100);
-        let height = defaults.height;
-        popup_height.value = height * (popup_scale_slider.value / 100);
-        const setResolutionFields = function() {
-            popup_width.value = round_64(width * (popup_scale_slider.value / 100));
-            popup_height.value = round_64(height * (popup_scale_slider.value / 100));
-        };
-        const setResolutionSlider = function() {
-            const ratio = ((popup_width.value / width) + (popup_height.value / height)) / 2;
-            width = popup_width.value / ratio;
-            height = popup_height.value / ratio;
-            popup_scale_slider.value = ratio * 100;
-        };
-
-        const set_width = debounce(function() {
-            const tmp_width = round_64(popup_width.value);
-            if (tmp_width != popup_width.value) {
-                popup_width.value = tmp_width;
-            }
-            setResolutionSlider();
-        }, 1000, false);
-        const set_height = debounce(function() {
-            const tmp_height = round_64(popup_height.value);
-            if (tmp_height != popup_height.value) {
-                popup_height.value = tmp_height;
-            }
-            setResolutionSlider();
-        }, 1000, false);
-
-        popup_prompt.value = defaults.prompt;
-
-        try {
-            popup_scale_slider.addEventListener('input', setResolutionFields);
-            popup_width.addEventListener('input', set_width);
-            popup_height.addEventListener('input', set_height);
-            // Display popup
-            popupContainer.style.display = 'block';
-            while (window.getComputedStyle(popupContainer).display !== "none") {
-                await asyncDelay(1000);
-            }
-        } finally {
-            popup_scale_slider.removeEventListener('input', setResolutionFields);
-            popup_width.removeEventListener('input', set_width);
-            popup_height.removeEventListener('input', set_height);
-        }
-        const response = {
-            cancelled: popupCancelled
-
-            , parallel: parseInt(popup_parallel.value)
-            , totalOutputs: parseInt(popup_totalOutputs.value)
-
-            , prompt: popup_prompt.value
-            , prompt_strength: parseFloat(popup_promptStrengthField.value)
-            , guidance_scale: parseFloat(popup_guidanceScaleField.value)
-
-            , width: round_64(popup_width.value)
-            , height: round_64(popup_height.value)
-            , scale: popup_scale_slider.value / 100
-
-            , turbo: popup_turbo.checked
-            , compoundChanges: compoundChanges.checked
-        };
-        popupCancelled = false;
-        return response;
     }
 
     function buildRequest(mode, reqBody, img, options = {}) {

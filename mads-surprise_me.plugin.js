@@ -163,6 +163,7 @@
     };
 
     //Load RiTa
+    //loadScript('/plugins/user/rita.js')
     const rita_script = document.createElement('script');
     rita_script.addEventListener('error', function() {
         surpriseMeButton.innerHTML = `ERR: Missing rita!`;
