@@ -37,6 +37,11 @@
         }
     })();
 
+    const TWITCH_USER_HOST = "tmi.twitch.tv";
+    const SUPPORTED_HOSTS = [
+        TWITCH_USER_HOST
+    ];
+
     const TWITCH_IRC_URL = "wss://irc-ws.chat.twitch.tv:443";
     const LOCALHOST_NAME = "Localhost";
 
@@ -689,8 +694,8 @@
         }
     }
 
-    let client;
-    let knownUsers;
+    let twitchService;
+    let streamConfig;
     let elementsToFocus = [];
     const preview = document.getElementById("preview");
 
@@ -764,14 +769,26 @@
     }
 
     async function getUserInfos(uniqueName, userName, serverName) {
-        console.log("Sender %o", await client.getUser(userName));
-        console.log("Channel VIPs %o", await client.getVIPs());
-        console.log("%s %o", uniqueName, knownUsers[serverName][userName]);
-        return knownUsers[serverName][userName];
+        const serverConfig = streamConfig[serverName];
+        if (!serverConfig) {
+            console.warn(`Server "${serverName}" config not found. Can't identify user ${userName}.`);
+            return
+        }
+        const userconfig = serverConfig[userName];
+        if (userconfig) {
+            console.log("User %s identified. Returning config %o", uniqueName, userconfig);
+            return userconfig;
+        }
+
+        const serverHost = SUPPORTED_HOSTS.find((host) => serverName.includes(host))
+        if (serverHost === TWITCH_USER_HOST) {
+            console.log("Sender %o", await twitchService.getUser(userName));
+            console.log("Channel VIPs %o", await twitchService.getVIPs());
+        }
     }
 
     async function onChatMessage(event) {
-        getUserInfos(event.uniqueName, event.userName, event.serverName);
+        const userConfig = getUserInfos(event.uniqueName, event.userName, event.serverName);
 
         let message = event.message;
         if (typeof message !== "string" || message.length <= 0) {
@@ -817,7 +834,7 @@
             })
         }));
 
-        if (newTaskRequests.length > (event.userName === USERNAME ? Number.MAX_SAFE_INTEGER : 4)) {
+        if (newTaskRequests.length > (userConfig?.group ? Number.MAX_SAFE_INTEGER : 4)) {
             console.warn('Need VIPs or mods permission for this command.');
             return;
         }
@@ -835,21 +852,22 @@
             connectButton.remove();
             connectButton = undefined;
         }
+        const streamConfigResponse = await fetch("/plugins/user/streamConfig.json?v=" + Date.now());
+        streamConfig = await streamConfigResponse.json();
+
         editor.style.display = 'none';
 
-        const usersResponse = await fetch("/plugins/user/users.json?v=" + Date.now());
-        knownUsers = await usersResponse.json();
-
-        client = new TwitchClient();
-        await client.getAccessToken(CLIENT_ID, CLIENT_SECRET, SCOPES);
-        const user = await client.getUser(USERNAME);
+        twitchService = new TwitchClient();
+        const twitchConfig = streamConfig[TWITCH_USER_HOST]
+        await twitchService.getAccessToken(twitchConfig.client_id, twitchConfig.secret, twitchConfig.scopes);
+        const user = await twitchService.getUser(twitchConfig.username);
         if (!user) {
             return;
         }
         console.log(user);
         //const broadcaster_id = user.getBroadcasterID();
-        //const chanInfo = client.getChannelInformation(broadcaster_id);
-        //client.getTopGames(access);
+        //const chanInfo = twitchService.getChannelInformation(broadcaster_id);
+        //twitchService.getTopGames(access);
 
         //const game = chanInfo.getGameInfo();
 
@@ -857,11 +875,11 @@
         //const offlineImage = user.getOfflineImage();
         //const gameBoxArt = game.getBoxArt(64, 64);
         asyncDelay(100).then(async function() {
-            while(!client.chat.isOpen) {
+            while(!twitchService.chat.isOpen) {
                 await asyncDelay(100);
             }
-            client.chat.joinChannels(...IRC_CHANNELS);
-            client.chat.addEventListener("userMessage", onChatMessage);
+            twitchService.chat.joinChannels(...twitchConfig.channels);
+            twitchService.chat.addEventListener("userMessage", onChatMessage);
         });
         let scrollPromise;
         setInterval(() => {
@@ -877,7 +895,7 @@
 
         topNav.appendChild(closeButton);
         closeButton.addEventListener('click', () => {
-            client.chat.close();
+            twitchService.chat.close();
             closeButton.disabled = true;
             closeButton.innerHTML = `Disconnected...`;
         });
