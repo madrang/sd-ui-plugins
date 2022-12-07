@@ -698,6 +698,7 @@
     let streamConfig;
     let elementsToFocus = [];
     const preview = document.getElementById("preview");
+    const autoScroll = document.getElementById("auto_scroll")
 
     function getTaskContainer(taskLabel) {
         if (!taskLabel) {
@@ -732,6 +733,13 @@
         }
 
         const element = elementsToFocus.shift();
+        if (autoScroll?.checked) {
+            while (elementsToFocus.length > 0) {
+                elementsToFocus.shift();
+                yield asyncDelay(8);
+            }
+            return;
+        }
         let rect = element.getBoundingClientRect();
         const MIN_STEP_SIZE = 3;
         let timeout = 750;
