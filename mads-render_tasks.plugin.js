@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.6.1";
+    const VERSION = "2.4.19.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
@@ -148,12 +148,9 @@
                         return;
                     }
                     const keep = parseInt(keepMaxSelect.value);
-                    const taskContainers = Array.from(document.querySelectorAll('#preview .imageTaskContainer .taskStatusLabel[style*="display: none;"]')).map((taskLabel) => {
-                        while(preview !== taskLabel.parentNode && taskLabel.parentNode) {
-                            taskLabel = taskLabel.parentNode;
-                        }
-                        return taskLabel;
-                    });
+                    const taskContainers = Array.from(
+                        document.querySelectorAll('#preview .imageTaskContainer .taskStatusLabel')
+                    ).filter(taskLabel => taskLabel.style.display == "none").map((taskLabel) => taskLabel.closest('.imageTaskContainer'));
                     for (const imageTask of taskContainers) {
                         if (taskContainers.indexOf(imageTask) < keep) {
                             continue;

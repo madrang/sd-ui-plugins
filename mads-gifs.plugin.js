@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.6.1";
+    const VERSION = "2.4.19.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s GIFs Version: %s', ID_PREFIX, VERSION);
 
@@ -107,6 +107,7 @@
         }
         PLUGINS['OUTPUTS_FORMATS'].register(function gif() {
             return (reqBody) => {
+                reqBody.stream_image_progress = true;
                 const instance = new SD.RenderTask(reqBody)
                 const enqueue = instance.enqueue
                 const gif = new GIF({

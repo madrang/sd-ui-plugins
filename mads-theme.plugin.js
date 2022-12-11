@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.15.2";
+    const VERSION = "2.4.19.1";
     const ID_PREFIX = "madrang-plugin";
     const THEME_KEY = 'theme-mads';
     const THEME_NAME = "Mads Theme";
@@ -76,6 +76,9 @@
 }
 .${THEME_KEY} a {
     color: rgb(204, 0, 0);
+}
+.${THEME_KEY} ::-webkit-scrollbar-thumb {
+    background: var(--background-color3) !important;
 }
 `;
     document.head.append(style);

@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.15.1";
+    const VERSION = "2.4.19.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s Twitch Integration! Version: %s', ID_PREFIX, VERSION);
 
@@ -697,49 +697,49 @@
     let twitchService;
     let streamConfig;
     let elementsToFocus = [];
+    const logo = document.getElementById("logo");
     const preview = document.getElementById("preview");
     const autoScroll = document.getElementById("auto_scroll")
 
-    function getTaskContainer(taskLabel) {
-        if (!taskLabel) {
-            return taskLabel;
-        }
-        while(preview !== taskLabel.parentNode && taskLabel.parentNode) {
-            taskLabel = taskLabel.parentNode;
-        }
-        return taskLabel;
-    }
     function* keepFocus() {
-        if (elementsToFocus.length <= 0) {
-            const keep = 5;
-            // Completed tasks
-            elementsToFocus = Array.from(document.querySelectorAll("#preview .imageTaskContainer .taskStatusLabel"))
-                .filter(taskLabel => taskLabel.style.display == "none")
-                .map(getTaskContainer);
-            for (const imageTask of elementsToFocus.splice(keep, Number.POSITIVE_INFINITY)) {
-                preview.removeChild(imageTask);
-            }
-            const processingTasks = Array.from(document.querySelectorAll('#preview .imageTaskContainer .taskStatusLabel'))
-                .filter((taskLabel) => {
-                    if (taskLabel.style.display == "none") {
-                        return false;
-                    }
-                    return taskLabel.innerHTML.toLowerCase().includes("processing");
-                }).map(getTaskContainer);
-            elementsToFocus.push(...processingTasks);
-        }
-        if (elementsToFocus.length <= 0) {
-            return
-        }
-
-        const element = elementsToFocus.shift();
         if (autoScroll?.checked) {
             while (elementsToFocus.length > 0) {
                 elementsToFocus.shift();
                 yield asyncDelay(8);
             }
-            return;
+            return asyncDelay(1000);
         }
+        if (elementsToFocus.length <= 0) {
+            const keep = 5;
+            // Completed tasks
+            elementsToFocus = Array.from(document.querySelectorAll("#preview .imageTaskContainer .taskStatusLabel"))
+                .filter((taskLabel) => taskLabel.style.display == "none").map((taskLabel) => taskLabel.closest('.imageTaskContainer'));
+            // Remove all after the keep amount.
+            for (const imageTask of elementsToFocus.splice(keep, Number.POSITIVE_INFINITY)) {
+                preview.removeChild(imageTask);
+            }
+            // Add those in progress if streaming is enabled.
+            if (typeof streamImageProgressField === "object" && streamImageProgressField.checked) {
+                const processingTasks = Array.from(document.querySelectorAll('#preview .imageTaskContainer .taskStatusLabel'))
+                .filter((taskLabel) => {
+                    if (taskLabel.style.display == "none") {
+                        return false;
+                    }
+                    return taskLabel.innerHTML.toLowerCase().includes("processing");
+                }).map((taskLabel) => taskLabel.closest('.imageTaskContainer'));
+                if (processingTasks.length > 0) {
+                    elementsToFocus.unshift(...processingTasks);
+                }
+            }
+            if (elementsToFocus.length <= 0) {
+                return asyncDelay(1000);
+            }
+            // Always end by returning all the way to the top of the page.
+            elementsToFocus.push(logo);
+        }
+        // List has elements.
+        // Move first into focus.
+        const element = elementsToFocus.shift();
         let rect = element.getBoundingClientRect();
         const MIN_STEP_SIZE = 3;
         let timeout = 750;
@@ -757,11 +757,21 @@
             yield asyncDelay(8);
             rect = element.getBoundingClientRect();
         }
+        if (element === logo) {
+            // Stay up 1 second at the logo, then continue moving...
+            return asyncDelay(1000);
+        }
+        if (element.querySelector(".imgContainer")) {
+            //Has an image. Wait longer...
+            return asyncDelay(16 * 1000);
+        }
+        // No image, only show we got the request then continue.
+        return asyncDelay(3 * 1000);
     }
 
     PLUGINS['TASK_CREATE'].push(function(event) {
-        const taskContainer = getTaskContainer(this['taskStatusLabel']);
-        elementsToFocus.push(taskContainer);
+        const taskContainer = this['taskStatusLabel'].closest('.imageTaskContainer');
+        elementsToFocus.unshift(taskContainer);
     });
 
     function removeAllTasks() {
@@ -858,12 +868,14 @@
     async function onTwitchConnect() {
         if (connectButton) {
             connectButton.remove();
-            connectButton = undefined;
         }
         const streamConfigResponse = await fetch("/plugins/user/streamConfig.json?v=" + Date.now());
         streamConfig = await streamConfigResponse.json();
 
+        // Hide the editor
         editor.style.display = 'none';
+        // Set full width
+        preview.style.paddingLeft = '0px';
 
         twitchService = new TwitchClient();
         const twitchConfig = streamConfig[TWITCH_USER_HOST]
@@ -894,7 +906,7 @@
             if (!scrollPromise?.isPending) {
                 scrollPromise = makeQuerablePromise(SD.Task.enqueue(keepFocus()));
             }
-        }, 16 * 1000);
+        }, 1000);
 
         const closeButton = document.createElement('button');
         closeButton.id = `${ID_PREFIX}-twitchDisconnectButton`;
@@ -906,6 +918,12 @@
             twitchService.chat.close();
             closeButton.disabled = true;
             closeButton.innerHTML = `Disconnected...`;
+            editor.style.removeProperty("display");
+            preview.style.removeProperty("padding-left");
+            asyncDelay(3 * 1000).then(() => {
+                closeButton.remove();
+                buttonsContainer.appendChild(connectButton);
+            });
         });
     }
 
