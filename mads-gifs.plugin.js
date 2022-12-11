@@ -366,6 +366,12 @@
     }
 })();
 
+
+//TODO Move to gifs.js
+//Merged with jsgif from shachaf
+//MIT Copyright (c) 2011 Shachaf Ben-Kiki
+//https://github.com/shachaf/jsgif/blob/master/gif.js
+
 // Generic functions
 function bitsToNum(word) {
     return word.reduce((s, n) => s * 2 + n, 0);
