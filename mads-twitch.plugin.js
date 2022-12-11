@@ -37,6 +37,39 @@
         }
     })();
 
+    const CONFIG_TEMPLATE = `{
+    "gateway.discord.gg": {
+        "id": USER_ID
+        , "client_id": "YOUR_CLIENT_ID"
+        , "secret": "YOUR_CLIENT_SECRET"
+
+        , "users": {
+            "Username#id": { "id":USER_ID, "group": "owner" }
+            , "Username#id": { "id":USER_ID, "group": "moderator" }
+            , "Username#id": { "id":USER_ID, "group": "vip" }
+        }
+    }
+    , "tmi.twitch.tv": {
+        "username": "YOUR_USERNAME"
+        , "scopes": [
+            "channel:read:subscriptions"
+            , "chat:read"
+            , "chat:edit"
+        ]
+
+        , "channels": [ "YOUR_USERNAME" ]
+
+        , "client_id": "YOUR_CLIENT_ID"
+        , "secret": "YOUR_CLIENT_SECRET"
+    }
+    , "YOUR_USERNAME.tmi.twitch.tv": {
+        "YOUR_USERNAME": { "group": "owner" }
+        , "user1": { "group": "moderator" }
+        , "user2": { "group": "vip" }
+    }
+}
+`;
+
     const TWITCH_USER_HOST = "tmi.twitch.tv";
     const SUPPORTED_HOSTS = [
         TWITCH_USER_HOST
