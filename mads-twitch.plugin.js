@@ -902,7 +902,7 @@
             twitchService.chat.addEventListener("userMessage", onChatMessage);
         });
         let scrollPromise;
-        setInterval(() => {
+        let intervalPtr = setInterval(() => {
             if (!scrollPromise?.isPending) {
                 scrollPromise = makeQuerablePromise(SD.Task.enqueue(keepFocus()));
             }
@@ -920,6 +920,7 @@
             closeButton.innerHTML = `Disconnected...`;
             editor.style.removeProperty("display");
             preview.style.removeProperty("padding-left");
+            clearInterval(intervalPtr);
             asyncDelay(3 * 1000).then(() => {
                 closeButton.remove();
                 buttonsContainer.appendChild(connectButton);
