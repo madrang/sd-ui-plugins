@@ -14,7 +14,7 @@
  *  0. You just DO WHAT THE FUCK YOU WANT TO.
  *
  * @link http://www.wtfpl.net/
- * @source https://raw.githubusercontent.com/madrang/sd-ui-plugins/master/buttons.plugin.js
+ * @source https://raw.githubusercontent.com/madrang/sd-ui-plugins/master/mads-theme.plugin.js
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
