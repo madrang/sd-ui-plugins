@@ -803,8 +803,14 @@
     }
 
     PLUGINS['TASK_CREATE'].push(function(event) {
+        if (elementsToFocus.length > 0 && elementsToFocus[0] === logo) {
+            //If already moving to logo next, remove it to add it after.
+            elementsToFocus.shift();
+        }
         const taskContainer = this['taskStatusLabel'].closest('.imageTaskContainer');
+        // Add to the start of the queue.
         elementsToFocus.unshift(taskContainer);
+        elementsToFocus.unshift(logo);
     });
 
     function removeAllTasks() {
