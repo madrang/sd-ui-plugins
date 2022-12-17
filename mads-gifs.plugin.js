@@ -1,4 +1,4 @@
-/* Madrang's SD-UI Render Tasks Plugin.js
+/* Madrang's SD-UI GIFs Plugin.js
  *        DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
  *                    Version 2, December 2004
  *
@@ -14,7 +14,7 @@
  *  0. You just DO WHAT THE FUCK YOU WANT TO.
  *
  * @link http://www.wtfpl.net/
- * @source https://raw.githubusercontent.com/madrang/sd-ui-plugins/master/buttons.plugin.js
+ * @source https://raw.githubusercontent.com/madrang/sd-ui-plugins/master/mads-gifs.plugin.js
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
