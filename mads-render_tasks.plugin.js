@@ -294,9 +294,9 @@
             }
 
             let width = defaults.width;
-            popup_width.value = width * (popup_scale_slider.value / 100);
+            popup_width.value = round_64(width * (popup_scale_slider.value / 100));
             let height = defaults.height;
-            popup_height.value = height * (popup_scale_slider.value / 100);
+            popup_height.value = round_64(height * (popup_scale_slider.value / 100));
             const setResolutionFields = function() {
                 popup_width.value = round_64(width * (popup_scale_slider.value / 100));
                 popup_height.value = round_64(height * (popup_scale_slider.value / 100));
