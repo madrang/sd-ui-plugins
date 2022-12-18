@@ -71,6 +71,7 @@
     }
     PLUGINS['OUTPUTS_FORMATS'].register(function grid() {
         const SIZE = { x: 10, y: 8 };
+        const INFERENCE_STEPS_INC = 5;
         const processImage = async function*(reqBody, callback, signal) {
             const gridCanvas = document.createElement('canvas');
             gridCanvas.width = reqBody.width * SIZE.x;
@@ -81,6 +82,7 @@
             console.log(`GRID - Starting ${gridCanvas.width}x${gridCanvas.height} grid render.`);
             for (let x = 0; x < SIZE.x; ++x) {
                 for (let y = 0; y < SIZE.y; ++y) {
+                    let prevStep = 0;
                     const updateCanvas = async function(event) {
                         console.log('Grid.updateCanvas on %o with %o', this, event);
                         let outputData = event.update?.output
@@ -100,6 +102,15 @@
                             );
                             event.update.output[0].data = gridCanvas.toDataURL("image/jpeg", reqBody.output_quality / 100);
                         }
+                        if (typeof this === "object" && typeof this.step === "number") {
+                            if (typeof signal.step !== "number") {
+                                signal.step = this.step;
+                            }
+                            if (prevStep < this.step) {
+                                signal.step += this.step - prevStep;
+                            }
+                            prevStep = this.step;
+                        }
                         const cbResult = callback.call(this, event);
                         if (typeof cbResult === "object" && cbResult instanceof Promise) {
                             return await cbResult;
@@ -113,7 +124,7 @@
                     });
                     console.log(`Grid.frame Starting Render [${x}, ${y}]`);
                     const result = yield SD.render(Object.assign({}, reqBody, {
-                        num_inference_steps: reqBody.num_inference_steps + (x * 5)
+                        num_inference_steps: reqBody.num_inference_steps + (x * INFERENCE_STEPS_INC)
                         , guidance_scale: Math.min(6.2, reqBody.guidance_scale) + (y * 6.2)
                         , output_format: 'png'
                     }), updateCanvas);
@@ -143,13 +154,28 @@
         };
         return (reqBody) => {
             const controller = new AbortController();
-            return {
+            return Object.defineProperties({
                 abort: () => controller.abort()
                 , enqueue: function(callback) {
                     const process = processImage(reqBody, callback, controller.signal);
-                    return SD.Task.enqueue(process);
+                    const processPromise = SD.Task.enqueue(process);
+                    processPromise.finally(controller.abort);
+                    return processPromise;
                 }
-            };
+            }, {
+                isPending: {
+                    configurable: true
+                    , get: () => !controller.signal.aborted
+                }
+                , total_steps: {
+                    configurable: true
+                    , get: () => SIZE.x * INFERENCE_STEPS_INC * SIZE.y
+                }
+                , step: {
+                    configurable: true
+                    , get: () => controller.signal.step
+                }
+            });
         }
     });
 
