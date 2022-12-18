@@ -106,6 +106,11 @@
                         }
                         return cbResult;
                     };
+                    updateCanvas.call({ status: SD.TaskStatus.processing }, {
+                        update: {
+                            output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality / 100)}]
+                        }
+                    });
                     console.log(`Grid.frame Starting Render [${x}, ${y}]`);
                     const result = yield SD.render(Object.assign({}, reqBody, {
                         num_inference_steps: reqBody.num_inference_steps + (x * 5)
