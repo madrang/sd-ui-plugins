@@ -98,7 +98,7 @@
                                     , width: reqBody.width, height: reqBody.height
                                 }
                             );
-                            event.update.output[0].data = gridCanvas.toDataURL("image/jpeg", reqBody.output_quality);
+                            event.update.output[0].data = gridCanvas.toDataURL("image/jpeg", reqBody.output_quality / 100);
                         }
                         const cbResult = callback.call(this, event);
                         if (typeof cbResult === "object" && cbResult instanceof Promise) {
@@ -129,12 +129,12 @@
                     console.log('Added new frame %o to grid %o', img, gridCanvas);
                     if (signal.aborted) {
                         console.log('grid stopped %o', gridCanvas);
-                        return {status:'abort', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality)}]};
+                        return {status:'abort', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality / 100)}]};
                     }
                 }
             }
             console.log('Completed grid %o', gridCanvas);
-            return {status:'succeeded', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality)}]};
+            return {status:'succeeded', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality / 100)}]};
         };
         return (reqBody) => {
             const controller = new AbortController();
