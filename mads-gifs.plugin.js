@@ -152,7 +152,7 @@
             }
         });
         PLUGINS['OUTPUTS_FORMATS'].register(function stepAnim() {
-            const processImage = async function*(reqBody, callback) {
+            const processImage = async function*(reqBody, callback, signal) {
                 console.log(`GIF - Starting ${reqBody.width}x${reqBody.height} gif render.`);
 
                 const gif = new GIF({
@@ -198,6 +198,9 @@
                     // Add to gif renderer.
                     gif.addFrame(outputCtx, {copy: true, delay});
                     console.log('Added new frame %o to gif %o', img, gif);
+                    if (signal.aborted) {
+                        break;
+                    }
                 }
                 // Reverse animation and add frames again.
                 renderFrames.reverse();
@@ -217,9 +220,11 @@
                 return {status:'succeeded', output: [{data:gifDataUrl}]};
             };
             return (reqBody) => {
+                const controller = new AbortController();
                 return {
-                    enqueue: function(callback) {
-                        const process = processImage(reqBody, callback);
+                    abort: () => controller.abort()
+                    , enqueue: function(callback) {
+                        const process = processImage(reqBody, callback, controller.signal);
                         return SD.Task.enqueue(process);
                     }
                 };
@@ -237,7 +242,7 @@
             const eventsArr = [];
             let imgHeader = undefined;
             const readGifPromiseSrc = new PromiseSource();
-            const processImage = async function*(callback) {
+            const processImage = async function*(callback, signal) {
                 const inputCanvas = document.createElement('canvas');
                 inputCanvas.width = event.reqBody.width;
                 inputCanvas.height = event.reqBody.height;
@@ -318,6 +323,10 @@
                     // Add to gif renderer.
                     gif.addFrame(outputCtx, {copy: true, delay});
                     console.log('Added new frame %o to gif %o', img, gif);
+
+                    if (signal.aborted) {
+                        break;
+                    }
                 }
                 // Start final render
                 gif.render();
@@ -346,10 +355,14 @@
                     console.log('GIF read completed! ImageData: %o', eventsArr);
                 }
             });
-            event.instance = {enqueue: function(callback) {
-                const process = processImage(callback);
-                return SD.Task.enqueue(process);
-            }};
+            const controller = new AbortController();
+            event.instance = {
+                abort: () => controller.abort()
+                , enqueue: function(callback) {
+                    const process = processImage(callback, controller.signal);
+                    return SD.Task.enqueue(process);
+                }
+            };
             event.reqBody.output_format = 'gif2gif';
         })
     }, (reason) => console.error(reason));

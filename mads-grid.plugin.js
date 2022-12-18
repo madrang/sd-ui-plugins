@@ -70,8 +70,8 @@
         return;
     }
     PLUGINS['OUTPUTS_FORMATS'].register(function grid() {
-        const SIZE = { x: 10, y: 7 };
-        const processImage = async function*(reqBody, callback) {
+        const SIZE = { x: 10, y: 8 };
+        const processImage = async function*(reqBody, callback, signal) {
             const gridCanvas = document.createElement('canvas');
             gridCanvas.width = reqBody.width * SIZE.x;
             gridCanvas.height = reqBody.height * SIZE.y;
@@ -98,7 +98,7 @@
                                     , width: reqBody.width, height: reqBody.height
                                 }
                             );
-                            event.update.output[0].data = gridCanvas.toDataURL("image/png");
+                            event.update.output[0].data = gridCanvas.toDataURL("image/jpeg", reqBody.output_quality);
                         }
                         const cbResult = callback.call(this, event);
                         if (typeof cbResult === "object" && cbResult instanceof Promise) {
@@ -109,7 +109,7 @@
                     console.log(`Grid.frame Starting Render [${x}, ${y}]`);
                     const result = yield SD.render(Object.assign({}, reqBody, {
                         num_inference_steps: reqBody.num_inference_steps + (x * 5)
-                        , guidance_scale: Math.min(6.25, reqBody.guidance_scale) + (y * 6.25)
+                        , guidance_scale: Math.min(6.2, reqBody.guidance_scale) + (y * 6.2)
                         , output_format: 'png'
                     }), updateCanvas);
                     console.log('Grid.frame Render response %o', result);
@@ -127,15 +127,21 @@
                         }
                     );
                     console.log('Added new frame %o to grid %o', img, gridCanvas);
+                    if (signal.aborted) {
+                        console.log('grid stopped %o', gridCanvas);
+                        return {status:'abort', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality)}]};
+                    }
                 }
             }
             console.log('Completed grid %o', gridCanvas);
-            return {status:'succeeded', output: [{data:gridCanvas.toDataURL("image/png")}]};
+            return {status:'succeeded', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality)}]};
         };
         return (reqBody) => {
+            const controller = new AbortController();
             return {
-                enqueue: function(callback) {
-                    const process = processImage(reqBody, callback);
+                abort: () => controller.abort()
+                , enqueue: function(callback) {
+                    const process = processImage(reqBody, callback, controller.signal);
                     return SD.Task.enqueue(process);
                 }
             };
