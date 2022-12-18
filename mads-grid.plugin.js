@@ -145,7 +145,7 @@
                     console.log('Added new frame %o to grid %o', img, gridCanvas);
                     if (signal.aborted) {
                         console.log('grid stopped %o', gridCanvas);
-                        return {status:'abort', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality / 100)}]};
+                        return {status:'succeeded', output: [{data:gridCanvas.toDataURL("image/jpeg", reqBody.output_quality / 100)}]};
                     }
                 }
             }
