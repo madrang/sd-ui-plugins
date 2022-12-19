@@ -70,6 +70,8 @@
 `;
     document.head.append(style);
 
+    const DEFAULT_SCALE_RATIO = 200;
+
     const mainContainer = document.getElementById('container');
     // Help and Community links
     const links = document.getElementById("community-links");
@@ -169,8 +171,9 @@
                 <p id="${ID_PREFIX}-popup-subtitle"></p>
                 <label for="${ID_PREFIX}-num_outputs_total">Number of Images:</label> <input id="${ID_PREFIX}-num_outputs_total" name="num_outputs_total" value="1" size="1"> <label><small>(total)</small></label> <input id="${ID_PREFIX}-num_outputs_parallel" name="num_outputs_parallel" value="1" size="1"> <label for="${ID_PREFIX}-num_outputs_parallel"><small>(in parallel)</small></label><br/>
                 <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br/>
+                <label for="${ID_PREFIX}-num_inference_steps">Inference Steps:</label></td><td> <input id="${ID_PREFIX}-num_inference_steps" name="${ID_PREFIX}-num_inference_steps" size="4" value="25"><br/>
                 <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br/>
-                <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="200" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br/></div>
+                <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br/></div>
                 <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
                 <div id="${ID_PREFIX}-turbo_container" title="Generates images faster, but uses an additional 1 GB of GPU memory"> <input id="${ID_PREFIX}-turbo" name="turbo" type="checkbox" checked> <label for="turbo">Turbo mode</label> </div>
                 <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt"></textarea>
@@ -218,6 +221,8 @@
             popup_guidanceScaleSlider.value = popup_guidanceScaleField.value * 10;
         });
         popup_guidanceScaleSlider.dispatchEvent(new Event("input"));
+
+        const popup_num_inference_steps = document.getElementById(`${ID_PREFIX}-num_inference_steps`);
 
         const popup_promptStrengthSlider = document.getElementById(`${ID_PREFIX}-prompt_strength_slider`);
         const popup_promptStrengthField = document.getElementById(`${ID_PREFIX}-prompt_strength`);
@@ -281,6 +286,9 @@
                         compoundChanges_container.style.display = 'none';
                     }
                     popup_turbo_container.style.display = 'none';
+                    if ("num_inference_steps" in defaults) {
+                        popup_num_inference_steps.value = defaults.num_inference_steps;
+                    }
                     break;
                 case MODE_RESIZE:
                     compoundChanges_container.style.display = 'none';
@@ -288,10 +296,14 @@
                     popup_subtitle.innerHTML = 'Resize the current render.</br><small>(Will include alterations/mutations.)</small>';
                     popup_parallel.value = 1;
                     popup_totalOutputs.value = 1;
-                    popup_scale_slider.value = 200;
+                    popup_scale_slider.value = DEFAULT_SCALE_RATIO;
                     popup_turbo_container.style.display = 'block';
+                    if ("num_inference_steps" in defaults) {
+                        popup_num_inference_steps.value = Math.round(defaults.num_inference_steps * (DEFAULT_SCALE_RATIO / 100));
+                    }
                     break;
             }
+            popup_num_inference_steps.value = Math.max(25, popup_num_inference_steps.value);
 
             let width = defaults.width;
             popup_width.value = round_64(width * (popup_scale_slider.value / 100));
@@ -348,10 +360,10 @@
                 , prompt: popup_prompt.value
                 , prompt_strength: parseFloat(popup_promptStrengthField.value)
                 , guidance_scale: parseFloat(popup_guidanceScaleField.value)
+                , num_inference_steps: parseInt(popup_num_inference_steps.value)
 
                 , width: round_64(popup_width.value)
                 , height: round_64(popup_height.value)
-                , scale: popup_scale_slider.value / 100
 
                 , turbo: popup_turbo.checked
                 , compoundChanges: compoundChanges.checked
@@ -454,12 +466,13 @@
         if ('turbo' in options) {
             newTaskRequest.reqBody.turbo = options.turbo;
         }
+        newTaskRequest.reqBody.prompt_strength = options.prompt_strength || 0.5;
+        newTaskRequest.reqBody.num_inference_steps = options.num_inference_steps || 25;
         switch (mode) {
             case MODE_REDO:
             case MODE_RESIZE:
                 if (!newTaskRequest.reqBody.init_image || mode === MODE_RESIZE || options.compoundChanges) {
                     newTaskRequest.reqBody.sampler = 'ddim';
-                    newTaskRequest.reqBody.prompt_strength = options.prompt_strength || '0.5';
                     newTaskRequest.reqBody.init_image = img.src;
                     delete newTaskRequest.reqBody.mask;
                     if (mode !== MODE_RESIZE) {
@@ -469,9 +482,8 @@
                     newTaskRequest.reqBody.seed = 1 + newTaskRequest.reqBody.seed;
                 }
                 if (mode === MODE_RESIZE) {
-                    newTaskRequest.reqBody.width = options.width || round_64(reqBody.width * (options.scale || 2));
-                    newTaskRequest.reqBody.height = options.height || round_64(reqBody.height * (options.scale || 2));
-                    newTaskRequest.reqBody.num_inference_steps = Math.min(100, options.num_inference_steps || Math.round(reqBody.num_inference_steps * (options.scale || 2)));
+                    newTaskRequest.reqBody.width = options.width;
+                    newTaskRequest.reqBody.height = options.height;
                     if (useUpscalingField.checked) {
                         newTaskRequest.reqBody.use_upscale = upscaleModelField.value;
                     } else {
