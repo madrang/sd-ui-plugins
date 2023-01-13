@@ -472,7 +472,7 @@
             case MODE_REDO:
             case MODE_RESIZE:
                 if (!newTaskRequest.reqBody.init_image || mode === MODE_RESIZE || options.compoundChanges) {
-                    newTaskRequest.reqBody.sampler = 'ddim';
+                    newTaskRequest.reqBody.sampler_name = 'ddim';
                     newTaskRequest.reqBody.init_image = img.src;
                     delete newTaskRequest.reqBody.mask;
                     if (mode !== MODE_RESIZE) {
