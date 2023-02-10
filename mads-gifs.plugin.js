@@ -65,6 +65,31 @@
         });
     }
 
+    function imageDelta(imageA, imageB) {
+        const getImgData = function(img) {
+            if (typeof img.getImageData === 'function') {
+                return img.getImageData(0, 0, img.width, img.height).data;
+            }
+            return img;
+        }
+        imageA = getImgData(imageA);
+        imageB = getImgData(imageB);
+        if (imageA.length !== imageB.length) {
+            return -1;
+        }
+        let changeDelta = 0;
+        for (let i = imageA.length - 1; i >= 0; i -= 4) {
+            // data === [R,G,B,A,R,G,B,A,...]
+            let pixChange = 0;
+            pixChange += Math.abs(data[i * 4 + 0] - data[i * 4 + 0])
+            pixChange += Math.abs(data[i * 4 + 1] - data[i * 4 + 1])
+            pixChange += Math.abs(data[i * 4 + 2] - data[i * 4 + 2])
+            pixChange += Math.abs(data[i * 4 + 3] - data[i * 4 + 3])
+            changeDelta += pixChange;
+        }
+        return changeDelta;
+    }
+
     function writeImg(ctx, header, img, transparency, disposalMethod) {
         const ct = img.lctFlag ? img.lct : header.gct; // TODO: What if neither exists?
         const cData = ctx.getImageData(img.leftPos, img.topPos, img.width, img.height);
@@ -230,6 +255,98 @@
                 };
             }
         });
+        PLUGINS['OUTPUTS_FORMATS'].register(function morph() {
+            const parsePrompt = function(text, params) {
+                for (const [argName, argValue] of Object.entries(params)) {
+                    text = text.replace(new RegExp(`{${argName}}`, "igm"), argValue.toFixed(3))
+                }
+                return text;
+            };
+            const processImage = async function*(reqBody, callback, signal) {
+                console.log(`GIF - Starting ${reqBody.width}x${reqBody.height} gif render.`);
+
+                const gif = new GIF({
+                    workerScript: '/plugins/user/gif.worker.js'
+                    , workers: 2
+                    , quality: 10
+                    , width: reqBody.width
+                    , height: reqBody.height
+                });
+
+                const saveGifPromiseSrc = new PromiseSource();
+                gif.on('finished', function(blob) {
+                    console.log('gif completed...')
+                    //window.open(URL.createObjectURL(blob));
+                    saveGifPromiseSrc.resolve(URL.createObjectURL(blob));
+                });
+
+                const offscreenOutput = new OffscreenCanvas(reqBody.width, reqBody.height);
+                const outputCtx = offscreenOutput.getContext("2d");
+                outputCtx.clearRect(0, 0, reqBody.width, reqBody.height);
+                const renderFrames = [];
+
+                let delay = 99;
+                const advance_step = 2;
+                const rangeStart = 1;
+                const rangeEnd = 99;
+                for (let weight_step = 0; rangeStart + weight_step <= rangeEnd; weight_step += advance_step) {
+                    let promptOptions;
+                    if (false) {
+                        const blendAlpha = (2.0 / (1.0 + Math.exp(-0.05 * weight_step))) - 1.0;
+                        promptOptions = { x: 100 * (1.0 - blendAlpha), y: 100 * blendAlpha };
+                    } else {
+                        promptOptions = { x: rangeEnd - weight_step, y: rangeStart + weight_step };
+                    }
+                    console.log(`Gif.frame Starting Render ${weight_step / advance_step}/${Math.floor((1 + rangeEnd - rangeStart) / advance_step)} using options %o`, promptOptions);
+                    const result = yield SD.render(Object.assign({}, reqBody, {
+                        prompt: parsePrompt(reqBody.prompt, promptOptions)
+                        , output_format: 'png'
+                    }), callback);
+                    console.log('Gif.frame Render response %o', result);
+
+                    const outputData = result?.output[0]?.data;
+                    renderFrames.push(outputData);
+
+                    // Clear output buffer
+                    outputCtx.clearRect(0, 0, reqBody.width, reqBody.height);
+                    // Read back result.
+                    const img = yield copyImg(outputCtx, {data: outputData, width: reqBody.width, height: reqBody.height});
+                    // Add to gif renderer.
+                    gif.addFrame(outputCtx, {copy: true, delay});
+                    console.log('Added new frame %o to gif %o', img, gif);
+                    if (signal.aborted) {
+                        break;
+                    }
+                }
+                // Reverse animation and add frames again.
+                renderFrames.reverse();
+                for(const imgData of renderFrames) {
+                    // Clear output buffer
+                    outputCtx.clearRect(0, 0, reqBody.width, reqBody.height);
+                    // Read back result.
+                    const img = yield copyImg(outputCtx, {data: imgData, width: reqBody.width, height: reqBody.height});
+                    // Add to gif renderer.
+                    gif.addFrame(outputCtx, {copy: true, delay});
+                    console.log('Added new frame %o to gif %o', img, gif);
+                }
+
+                // Start final render
+                gif.render();
+                const gifDataUrl = await saveGifPromiseSrc.promise;
+                return {status:'succeeded', output: [{data:gifDataUrl}]};
+            };
+            return (reqBody) => {
+                const controller = new AbortController();
+                return {
+                    abort: () => controller.abort()
+                    , enqueue: function(callback) {
+                        const process = processImage(reqBody, callback, controller.signal);
+                        return SD.Task.enqueue(process);
+                    }
+                };
+            }
+        });
+
         const GIF_HEADER = 'data:image/gif;base64,'
         PLUGINS['TASK_CREATE'].push(function(event) {
             if (typeof event?.reqBody?.init_image !== 'string' || !event.reqBody.init_image.startsWith(GIF_HEADER)) {
@@ -244,8 +361,8 @@
             const readGifPromiseSrc = new PromiseSource();
             const processImage = async function*(callback, signal) {
                 const inputCanvas = document.createElement('canvas');
-                inputCanvas.width = event.reqBody.width;
-                inputCanvas.height = event.reqBody.height;
+                inputCanvas.width = imgHeader.width;
+                inputCanvas.height = imgHeader.height;
                 const inputCtx = inputCanvas.getContext("2d");
                 inputCtx.clearRect(0, 0, event.reqBody.width, event.reqBody.height);
 
@@ -256,8 +373,8 @@
                     workerScript: '/plugins/user/gif.worker.js'
                     , workers: 2
                     , quality: 10
-                    , width: imgHeader.width
-                    , height: imgHeader.height
+                    , width: event.reqBody.width
+                    , height: event.reqBody.height
                 });
 
                 const saveGifPromiseSrc = new PromiseSource();
@@ -267,11 +384,10 @@
                     saveGifPromiseSrc.resolve(URL.createObjectURL(blob));
                 });
 
-                const offscreenOutput = new OffscreenCanvas(imgHeader.width, imgHeader.height);
+                const offscreenOutput = new OffscreenCanvas(event.reqBody.width, event.reqBody.height);
                 const outputCtx = offscreenOutput.getContext("2d");
-                outputCtx.clearRect(0, 0, imgHeader.width, imgHeader.height);
+                outputCtx.clearRect(0, 0, event.reqBody.width, event.reqBody.height);
 
-                let prompt_strength = event.reqBody.prompt_strength;
                 let transparency = undefined;
                 let disposalMethod = undefined;
                 let delay = 500;
@@ -317,9 +433,9 @@
                     console.log('Gif.frame Render response %o', result);
 
                     // Clear output buffer
-                    outputCtx.clearRect(0, 0, imgHeader.width, imgHeader.height);
+                    outputCtx.clearRect(0, 0, event.reqBody.width, event.reqBody.height);
                     // Read back result.
-                    const img = yield copyImg(outputCtx, {data: result?.output[0]?.data, width: imgHeader.width, height: imgHeader.height});
+                    const img = yield copyImg(outputCtx, {data: result?.output[0]?.data});
                     // Add to gif renderer.
                     gif.addFrame(outputCtx, {copy: true, delay});
                     console.log('Added new frame %o to gif %o', img, gif);
