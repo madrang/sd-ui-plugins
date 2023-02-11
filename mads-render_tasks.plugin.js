@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.5.4.1";
+    const VERSION = "2.5.13.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
@@ -175,7 +175,7 @@
                 <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br/>
                 <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br/></div>
                 <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
-                <div id="${ID_PREFIX}-turbo_container" title="Generates images faster, but uses an additional 1 GB of GPU memory"> <input id="${ID_PREFIX}-turbo" name="turbo" type="checkbox" checked> <label for="turbo">Turbo mode</label> </div>
+                <div id="${ID_PREFIX}-vram_level_container" title="Faster performance requires more GPU memory (VRAM)"> <label for="${ID_PREFIX}-vram_level">GPU Memory Usage</label> <select id="${ID_PREFIX}-vram_level" name="vram_level"> <option value="high">High</option><option value="balanced">Balanced</option><option value="low">Low</option> </select> </div>
                 <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt"></textarea>
                 <p><small><b>Tip:</b> You can click on the transparent overlay to close </br> and by holding Ctrl quickly Apply. </br> Edit the prompt to control the alterations. </small></p>
                 <button id="${ID_PREFIX}-popup-apply-btn" class="secondaryButton"><i class="fa-solid fa-check"></i> Apply</button>
@@ -249,8 +249,8 @@
         const compoundChanges_container = document.getElementById(`${ID_PREFIX}-compoundChanges_container`);
         const compoundChanges = document.getElementById(`${ID_PREFIX}-compoundChanges`);
 
-        const popup_turbo = document.getElementById(`${ID_PREFIX}-turbo`);
-        const popup_turbo_container = document.getElementById(`${ID_PREFIX}-turbo_container`);
+        const popup_vram_level = document.getElementById(`${ID_PREFIX}-vram_level`);
+        const popup_vram_level_container = document.getElementById(`${ID_PREFIX}-vram_level_container`);
 
         showPopup = async (mode, defaults = {}) => {
             popupCancelled = false;
@@ -263,10 +263,10 @@
             popup_promptStrengthSlider.value = ('prompt_strength' in defaults ? defaults.prompt_strength * 100 : 50);
             popup_promptStrengthField.value = defaults.prompt_strength || 0.5;
 
-            if (typeof turboField !== "undefined" && typeof turboField.checked === "boolean") {
-                popup_turbo.checked = turboField.checked;
+            if (typeof vramUsageLevelField !== "undefined" && typeof vramUsageLevelField.value === "string") {
+                popup_vram_level.value = vramUsageLevelField.value;
             } else {
-                popup_turbo.checked = defaults.turbo;
+                popup_vram_level.value = defaults.vram_usage_level;
             }
 
             switch (mode) {
@@ -285,7 +285,7 @@
                     } else {
                         compoundChanges_container.style.display = 'none';
                     }
-                    popup_turbo_container.style.display = 'none';
+                    popup_vram_level_container.style.display = 'none';
                     if ("num_inference_steps" in defaults) {
                         popup_num_inference_steps.value = defaults.num_inference_steps;
                     }
@@ -297,7 +297,7 @@
                     popup_parallel.value = 1;
                     popup_totalOutputs.value = 1;
                     popup_scale_slider.value = DEFAULT_SCALE_RATIO;
-                    popup_turbo_container.style.display = 'block';
+                    popup_vram_level_container.style.display = 'block';
                     if ("num_inference_steps" in defaults) {
                         popup_num_inference_steps.value = Math.round(defaults.num_inference_steps * (DEFAULT_SCALE_RATIO / 100));
                     }
@@ -365,7 +365,7 @@
                 , width: round_64(popup_width.value)
                 , height: round_64(popup_height.value)
 
-                , turbo: popup_turbo.checked
+                , vram_usage_level: popup_vram_level.value
                 , compoundChanges: compoundChanges.checked
             };
             popupCancelled = false;
@@ -463,8 +463,8 @@
         if ('prompt' in options) {
             newTaskRequest.reqBody.prompt = options.prompt;
         }
-        if ('turbo' in options) {
-            newTaskRequest.reqBody.turbo = options.turbo;
+        if ('vram_usage_level' in options) {
+            newTaskRequest.reqBody.vram_usage_level = options.vram_usage_level;
         }
         newTaskRequest.reqBody.prompt_strength = options.prompt_strength || 0.5;
         newTaskRequest.reqBody.num_inference_steps = options.num_inference_steps || 25;
