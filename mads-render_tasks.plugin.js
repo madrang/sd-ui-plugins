@@ -24,9 +24,11 @@
 
     const MODE_REDO = 'img2img_redo';
     const MODE_RESIZE = 'img2img_resize';
+    const MODE_WARP = 'img2img_warp';
     const MODE_DISPLAY_NAMES = {
         [MODE_REDO]: "Mad's Redo Vars"
         , [MODE_RESIZE]: "Mad's Resize"
+        , [MODE_WARP]: "Mad's Warp"
     };
     Object.keys(MODE_DISPLAY_NAMES).forEach((key) => PLUGINS['IMAGE_INFO_BUTTONS'].push({ text: MODE_DISPLAY_NAMES[key], on_click: getStartNewTaskHandler(key) }))
 
@@ -70,7 +72,509 @@
 `;
     document.head.append(style);
 
+    function clamp(num, min = 0, max = 1) {
+        if (min === max) {
+            return min;
+        }
+        if (max < min) {
+            return (
+                (num <= max) ? max : (
+                    (num >= min) ? min : num
+                )
+            );
+        }
+        return (
+            (num <= min) ? min : (
+                (num >= max) ? max : num
+            )
+        );
+    };
+    const invlerp = (start, end, amt) => clamp((amt - start) / (end - start));
+    const lerp = (start, end, amt) => clamp((1 - amt) * start + amt * end, start, end);
+    const scale = (x, in_min, in_max, out_min, out_max) => clamp((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min, out_min, out_max);
+
+    function readAsDataURL(file) {
+        return new Promise(function(resolve, reject) {
+            const reader = new FileReader();
+            reader.addEventListener("load", () => {
+                // resolve file as base64 string
+                resolve(reader.result);
+            }, false);
+            reader.addEventListener("error", (event) => {
+                reject(new Error("Error occurred reading object"));
+            });
+            reader.readAsDataURL(file);
+        });
+    }
+
+    const KEYBOARD_SPEED = 0.001;
+    class InputSurface extends HTMLCanvasElement {
+        #image = undefined;
+        #offset = undefined;
+        #size = undefined;
+        #ctx = undefined;
+        constructor() {
+            super();
+            // Allow to be focused for keyboard events.
+            this.tabIndex = 0;
+            // Keyboard Input
+            this.addEventListener('keydown', (event) => this.#onKeyboardInput(event));
+            this.addEventListener('keyup'  , (event) => this.#onKeyboardInput(event));
+            // Mouse Input
+            this.addEventListener('mousedown'     , (event) => this.#onMouseInput(event));
+            this.addEventListener('mousemove'     , (event) => this.#onMouseInput(event));
+            this.addEventListener('mouseup'       , (event) => this.#onMouseInput(event));
+            this.addEventListener('wheel'         , (event) => this.#onMouseInput(event));
+
+            // Update Visual
+            //document.addEventListener("focus", redraw, true);
+            //document.addEventListener("blur", redraw, true);
+            this.#onChanged();
+
+            // get context
+            this.#ctx = this.getContext('2d');
+        }
+
+        get disabled() {
+            return this.hasAttribute('disabled');
+        }
+        set disabled(val) {
+            if (val) {
+                this.setAttribute('disabled', '');
+            } else {
+                this.removeAttribute('disabled');
+            }
+            this.#onChanged();
+        }
+
+        get size() {
+            if (this.#size) {
+                return this.#size;
+            }
+            if (!this.hasAttribute('size')) {
+                this.#size = [ 1.0, 1.0 ];
+                return this.#size;
+            }
+            const attrVal = this.getAttribute('size');
+            this.#size = JSON.parse(attrVal);
+            return this.#size;
+        }
+        set size(val) {
+            if (val) {
+                this.#size = val;
+                this.setAttribute('size', JSON.stringify(val));
+            } else {
+                this.#size = [ 1.0, 1.0 ];
+                this.removeAttribute('size');
+            }
+            this.#onChanged();
+        }
+        get offset() {
+            if (this.#offset) {
+                return this.#offset;
+            }
+            if (!this.hasAttribute('offset')) {
+                this.#offset = [ 0, 0 ];
+                return this.#offset;
+            }
+            const attrVal = this.getAttribute('offset');
+            this.#offset = JSON.parse(attrVal);
+            return this.#offset;
+        }
+        set offset(val) {
+            const oldOffset = this.offset;
+            if (val && oldOffset[0] == val[0] && oldOffset[1] == val[1]) {
+                return;
+            }
+            if (val) {
+                this.#offset = val;
+                this.setAttribute('offset', JSON.stringify(val));
+            } else {
+                this.#offset = [ 0, 0 ];
+                this.removeAttribute('offset');
+            }
+            this.#onChanged();
+        }
+
+        get image() {
+            return this.#image?.src;
+        }
+        set image(val) {
+            console.log("get image", val);
+            getImg(val).then(image => {
+                this.#image = image;
+                console.log("cursor image", image);
+            });
+            this.#onChanged();
+        }
+
+        get height() {
+            return super.height;
+        }
+        set height(val) {
+            super.height = val;
+            this.#onChanged();
+        }
+        get width() {
+            return super.width;
+        }
+        set width(val) {
+            super.width = val;
+            this.#onChanged();
+        }
+
+        reset() {
+            this.offset = [0,0];
+            this.size = [1,1];
+        }
+
+        #onChanged() {
+            this.dispatchEvent(new Event('change'));
+            // Redraw canvas
+            this.raf = window.requestAnimationFrame((time) => InputSurface.prototype.draw.call(this, time));
+        }
+
+        #onKeyboardInput(event) {
+            //console.log('#onKeyboardInput', event);
+            switch (event.key) {
+                case "Down":
+                case "ArrowDown":
+                    this.offset = [
+                        this.offset[0]
+                        , clamp(this.offset[1] + (event.shiftKey ? KEYBOARD_SPEED * 10 : KEYBOARD_SPEED), -1, 1)
+                    ];
+                    break;
+                case "Up":
+                case "ArrowUp":
+                    this.offset = [
+                        this.offset[0]
+                        , clamp(this.offset[1] - (event.shiftKey ? KEYBOARD_SPEED * 10 : KEYBOARD_SPEED), -1, 1)
+                    ];
+                    break;
+                case "Left":
+                case "ArrowLeft":
+                    this.offset = [
+                        clamp(this.offset[0] - (event.shiftKey ? KEYBOARD_SPEED * 10 : KEYBOARD_SPEED), -1, 1)
+                        , this.offset[1]
+                    ];
+                    break;
+                case "Right":
+                case "ArrowRight":
+                    this.offset = [
+                        clamp(this.offset[0] + (event.shiftKey ? KEYBOARD_SPEED * 10 : KEYBOARD_SPEED), -1, 1)
+                        , this.offset[1]
+                    ];
+                    break;
+                default:
+                    return;
+            }
+            //console.log('offset', this.offset);
+            // Cancel the default action to avoid it being handled twice
+            event.preventDefault();
+            event.stopPropagation();
+            this.#onChanged();
+        }
+        #onMouseInput(event) {
+            //console.log('#onMouseInput', event);
+            if (this.disabled) {
+                return;
+            }
+            if (event instanceof WheelEvent || event.type == "wheel") {
+                event.preventDefault();
+                //event.wheelDeltaX
+                this.size = this.size.map((s) => s + (event.wheelDeltaY / 1000));
+                return false;
+            }
+            // mouseup, mousedown, mousemove
+            let evButtons = event.buttons;
+            if (event instanceof MouseEvent && event.type == "click" && !evButtons) {
+                evButtons = 1;
+            }
+            if (!evButtons) {
+                return;
+            }
+            if (evButtons === 1) {
+                this.offset = [
+                    scale(invlerp(0, this.width, event.pageX - (this.offsetLeft + window.scrollX)), 0, 1, -1, 1)
+                    , scale(invlerp(0, this.height, event.pageY - (this.offsetTop + window.scrollY)), 0, 1, -1, 1)
+                ];
+                //console.log('offset', this.offset);
+            }
+        }
+
+        static spiral(setPixel, width, height, x, y) {
+            if (typeof x === "undefined") {
+                x = width / 2;
+            }
+            if (typeof y === "undefined") {
+                y = height / 2;
+            }
+            const startX = x;
+            const startY = y;
+            x = clamp(Math.round(x), 0, width - 1);
+            y = clamp(Math.round(y), 0, height - 1);
+            let upper = y;
+            let lower = y;
+            let left = x;
+            let right = x;
+            const getRatio = function() {
+                let w;
+                if (right >= width) {
+                    if (left < 0) {
+                        w = width * 4;
+                    } else {
+                        w = (startX - left) * 2;
+                    }
+                } else if (left < 0) {
+                    w = (right - startX) * 2;
+                } else {
+                    w = right - left;
+                }
+                let h;
+                if (lower >= height) {
+                    if (upper < 0) {
+                        h = height * 4;
+                    } else {
+                        h = (startY - upper) * 2;
+                    }
+                } else if (upper < 0) {
+                    h = (lower - startY) * 2;
+                } else {
+                    h = lower - upper;
+                }
+                if (h <= 0) {
+                    if (w <= 0) {
+                        return 0;
+                    }
+                    return w;
+                }
+                return w / h;
+            };
+            const keepCenter = function(edge) {
+                switch (edge) {
+                    case "up": return startY - upper <= lower - startY || lower >= height;
+                    case "right": return startX - left >= right - startX || left < 0;
+                    case "down": return startY - upper >= lower - startY || upper < 0;
+                    case "left": return startX - left <= right - startX || right >= width;
+                }
+            }
+            while (upper >= 0 || lower < height || left >= 0 || right < width) {
+                if (upper >= 0 && getRatio() >= (width / height) && keepCenter("up")) {
+                    while (x < right && x < width) {
+                        setPixel(x, y, "up", Math.max(Math.abs(x - startX), Math.abs(y - startY)));
+                        x++;
+                    }
+                    upper--;
+                } else {
+                    x = right;
+                    y = upper + 1;
+                }
+                if (right < width && getRatio() <= (width / height) && keepCenter("right")) {
+                    while (y < lower && y < height) {
+                        setPixel(x, y, "right", Math.max(Math.abs(x - startX), Math.abs(y - startY)));
+                        y++;
+                    }
+                    right++;
+                } else {
+                    y = lower;
+                    x = right - 1;
+                }
+                if (lower < height && getRatio() >= (width / height) && keepCenter("down")) {
+                    while (x > left && x >= 0) {
+                        setPixel(x, y, "down", Math.max(Math.abs(x - startX), Math.abs(y - startY)));
+                        x--;
+                    }
+                    lower++;
+                } else {
+                    x = left;
+                    y = lower - 1;
+                }
+                if (left >= 0 && getRatio() <= (width / height) && keepCenter("left")) {
+                    while (y > upper && y >= 0) {
+                        setPixel(x, y, "left", Math.max(Math.abs(x - startX), Math.abs(y - startY)));
+                        y--;
+                    }
+                    left--;
+                } else {
+                    y = upper;
+                    x = left + 1;
+                }
+            }
+        }
+        static getPixelOffset(rawImage, x, y, edge, edgeOffset = 1) {
+            switch (edge) {
+                case "up":
+                    if (y - edgeOffset < 0) {
+                        return undefined;
+                    }
+                    return ((y - edgeOffset) * rawImage.width + x) * 4;
+                case "right":
+                    if (x + edgeOffset >= rawImage.width) {
+                        return undefined;
+                    }
+                    return (y * rawImage.width + (x + edgeOffset)) * 4;
+                case "down":
+                    if (y + edgeOffset >= rawImage.height) {
+                        return undefined;
+                    }
+                    return ((y + edgeOffset) * rawImage.width + x) * 4;
+                case "left":
+                    if (x - edgeOffset < 0) {
+                        return undefined;
+                    }
+                    return (y * rawImage.width + (x - edgeOffset)) * 4;
+                default:
+                    return (y * rawImage.width + x) * 4;
+            }
+        }
+
+        makeNoise(rawImage, mode, mask) {
+            const pix = rawImage.data;
+            const maskData = mask?.data;
+            const setPixel = function(x, y, edge, distance = 0) {
+                let i = InputSurface.getPixelOffset(rawImage, x, y);
+                if (pix[i + 3] > 0) {
+                    // Set mask
+                    if (maskData) {
+                        let maskVal = 0;
+                        const next = InputSurface.getPixelOffset(rawImage, x, y, edge, 1);
+                        if (next && pix[next + 3] == 0) {
+                            const overlapDist = 64;
+                            const fadeDist = 50;
+                            for (let p = 1; p <= overlapDist; ++p) {
+                                const prevMask = InputSurface.getPixelOffset(rawImage, x, y, edge, -p);
+                                if (!prevMask) {
+                                    break;
+                                }
+                                maskVal = Math.max(
+                                    Math.ceil(scale(Math.min(overlapDist - p, fadeDist), 0, fadeDist, 1, 255))
+                                    , maskData[prevMask]
+                                );
+                                maskData[prevMask] = maskVal;
+                                maskData[prevMask + 1] = maskVal;
+                                maskData[prevMask + 2] = maskVal;
+                                maskData[prevMask + 3] = 255;
+                            }
+                            maskVal = 255;
+                        }
+                        maskData[i] = maskVal;
+                        maskData[i + 1] = maskVal;
+                        maskData[i + 2] = maskVal;
+                        maskData[i + 3] = 255;
+                    }
+                    // Ignore alpha values that have been set.
+                    return;
+                }
+                const prev = edge ? InputSurface.getPixelOffset(rawImage, x, y, edge, -(Math.floor(Math.random() * (distance / 2)) + 1)) : undefined;
+                const gain = 30; // Max 40
+                let c = 7 + Math.sin(i / 50000);
+                if (prev) {
+                    const lpGain = 0.05;
+                    pix[i] = lerp(pix[prev], gain * Math.random() * c, lpGain);
+                    pix[i + 1] = lerp(pix[prev + 1], gain * Math.random() * c, lpGain);
+                    pix[i + 2] = lerp(pix[prev + 2], gain * Math.random() * c, lpGain);
+                } else {
+                    pix[i] = gain * Math.random() * c;
+                    pix[i + 1] = gain * Math.random() * c;
+                    pix[i + 2] = gain * Math.random() * c;
+                }
+                // Set alpha to be non transparent.
+                pix[i + 3] = 255;
+                // Set mask
+                if (maskData) {
+                    maskData[i] = 255;
+                    maskData[i + 1] = 255;
+                    maskData[i + 2] = 255;
+                    maskData[i + 3] = 255;
+                    mask.modified = true;
+                }
+            };
+            if (mode === "fast") {
+                for(let y = 0; y < rawImage.height; ++y) {
+                    for(let x = 0; x < rawImage.width; ++x) {
+                        setPixel(x, y);
+                    }
+                }
+            } else {
+                InputSurface.spiral(setPixel
+                    ,rawImage.width, rawImage.height
+                    , scale(this.offset[0], -1, 1, -rawImage.width * this.size[0], rawImage.width) + ((rawImage.width / 2) * this.size[0])
+                    , scale(this.offset[1], -1, 1, -rawImage.height * this.size[1], rawImage.height) + ((rawImage.height / 2) * this.size[1])
+                );
+            }
+        }
+
+        draw (time) {
+            // Clear canvas surface.
+            this.#ctx.clearRect(0, 0, this.width, this.height);
+
+            //TODO Blend image with noise using prompt strength
+            this.#ctx.globalAlpha = 1.0;
+
+            // Draw current image
+            const curImg = this.#image;
+            if (curImg) {
+                this.#ctx.drawImage(curImg
+                    , Math.round(scale(this.offset[0], -1, 1, -this.width * this.size[0], this.width))
+                    , Math.round(scale(this.offset[1], -1, 1, -this.height * this.size[1], this.height))
+                    , Math.floor(this.size[0] * this.width), Math.floor(this.size[1] * this.height)
+                );
+            } else {
+                // If missing, fill with gray square.
+                this.#ctx.fillStyle = "rgb(128, 128, 128)";
+                this.#ctx.fillRect(
+                    scale(this.offset[0], -1, 1, -this.width * this.size[0], this.width)
+                    , scale(this.offset[1], -1, 1, -this.height * this.size[1], this.height)
+                    , this.size[0] * this.width, this.size[1] * this.height
+                );
+            }
+            this.#ctx.globalAlpha = 1.0;
+
+            // Add noize
+            const rawImage = this.#ctx.getImageData(0, 0, this.width, this.height);
+            this.makeNoise(rawImage);
+            this.#ctx.putImageData(rawImage, 0, 0);
+        };
+
+        async render () {
+            const curImg = this.#image;
+            if (!curImg) {
+                throw new Error("No image defined!");
+            }
+
+            const offscreeCanvas = new OffscreenCanvas(
+                Math.round(curImg.width / this.size[0])
+                , Math.round(curImg.height / this.size[1])
+            );
+            const ctx = offscreeCanvas.getContext('2d');
+
+            // Clear canvas surface.
+            ctx.clearRect(0, 0, curImg.width, curImg.height);
+            // Draw current image
+            ctx.drawImage(curImg
+                , Math.round(scale(this.offset[0], -1, 1, -curImg.width, offscreeCanvas.width))
+                , Math.round(scale(this.offset[1], -1, 1, -curImg.height, offscreeCanvas.height))
+                , curImg.width, curImg.height
+            );
+            // Add noize
+            const rawImage = ctx.getImageData(0, 0, offscreeCanvas.width, offscreeCanvas.height);
+            const mask = ctx.createImageData(offscreeCanvas.width, offscreeCanvas.height);
+            this.makeNoise(rawImage, undefined, mask);
+            ctx.putImageData(rawImage, 0, 0);
+            // Contert to URL.
+            const imageData = await readAsDataURL(await offscreeCanvas.convertToBlob());
+            if (mask.modified) {
+                ctx.putImageData(mask, 0, 0);
+                const maskData = await readAsDataURL(await offscreeCanvas.convertToBlob());
+                return { image: imageData, mask: maskData };
+            }
+            return { image: imageData };
+        }
+    }
+    customElements.define('input-surface', InputSurface, { extends: 'canvas' });
+
     const DEFAULT_SCALE_RATIO = 200;
+    const SURFACE_MAX_SIZE = 300;
 
     const mainContainer = document.getElementById('container');
     // Help and Community links
@@ -167,13 +671,16 @@
         popupContainer.innerHTML = `
             <div>
                 <span id="${ID_PREFIX}-popup-close-btn">X</span>
-                <h1 id="${ID_PREFIX}-popup-title">Popup Settings<br/><small style="font-size: small;">V${VERSION}</small></h1>
+                <h1 id="${ID_PREFIX}-popup-title">Popup Settings<br><small style="font-size: small;">V${VERSION}</small></h1>
                 <p id="${ID_PREFIX}-popup-subtitle"></p>
-                <label for="${ID_PREFIX}-num_outputs_total">Number of Images:</label> <input id="${ID_PREFIX}-num_outputs_total" name="num_outputs_total" value="1" size="1"> <label><small>(total)</small></label> <input id="${ID_PREFIX}-num_outputs_parallel" name="num_outputs_parallel" value="1" size="1"> <label for="${ID_PREFIX}-num_outputs_parallel"><small>(in parallel)</small></label><br/>
-                <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br/>
-                <label for="${ID_PREFIX}-num_inference_steps">Inference Steps:</label></td><td> <input id="${ID_PREFIX}-num_inference_steps" name="${ID_PREFIX}-num_inference_steps" size="4" value="25"><br/>
-                <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br/>
-                <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br/></div>
+                <label for="${ID_PREFIX}-num_outputs_total">Number of Images:</label> <input id="${ID_PREFIX}-num_outputs_total" name="num_outputs_total" value="1" size="1"> <label><small>(total)</small></label> <input id="${ID_PREFIX}-num_outputs_parallel" name="num_outputs_parallel" value="1" size="1"> <label for="${ID_PREFIX}-num_outputs_parallel"><small>(in parallel)</small></label><br>
+                <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br>
+                <label for="${ID_PREFIX}-num_inference_steps">Inference Steps:</label></td><td> <input id="${ID_PREFIX}-num_inference_steps" name="${ID_PREFIX}-num_inference_steps" size="4" value="25"><br>
+                <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br>
+                <div id="${ID_PREFIX}-warp_input_surface_container"><canvas is="input-surface" id="${ID_PREFIX}-warp_input_surface" name="warp_input_surface" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"></canvas><br>
+                    <label for="${ID_PREFIX}-warp_input_surface">Warp:</label> <input id="${ID_PREFIX}-warp_slider" name="warp_slider" class="editor-slider" value="100" type="range" min="0" max="200"> <input id="${ID_PREFIX}-warp_width" name="width" size="4"> x <input id="${ID_PREFIX}-warp_height" name="height" size="4"><br>
+                </div>
+                <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br></div>
                 <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
                 <div id="${ID_PREFIX}-vram_level_container" title="Faster performance requires more GPU memory (VRAM)"> <label for="${ID_PREFIX}-vram_level">GPU Memory Usage</label> <select id="${ID_PREFIX}-vram_level" name="vram_level"> <option value="high">High</option><option value="balanced">Balanced</option><option value="low">Low</option> </select> </div>
                 <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt"></textarea>
@@ -246,16 +753,22 @@
         const popup_prompt = document.getElementById(`${ID_PREFIX}-prompt`);
         const resolution_container = document.getElementById(`${ID_PREFIX}-resolution_container`);
 
+        const input_surface_container = document.getElementById(`${ID_PREFIX}-warp_input_surface_container`);
+        const input_surface_canvas = document.getElementById(`${ID_PREFIX}-warp_input_surface`);
+        const popup_warp_slider = document.getElementById(`${ID_PREFIX}-warp_slider`);
+        const popup_warp_width = document.getElementById(`${ID_PREFIX}-warp_width`);
+        const popup_warp_height = document.getElementById(`${ID_PREFIX}-warp_height`);
+
         const compoundChanges_container = document.getElementById(`${ID_PREFIX}-compoundChanges_container`);
         const compoundChanges = document.getElementById(`${ID_PREFIX}-compoundChanges`);
 
         const popup_vram_level = document.getElementById(`${ID_PREFIX}-vram_level`);
         const popup_vram_level_container = document.getElementById(`${ID_PREFIX}-vram_level_container`);
 
-        showPopup = async (mode, defaults = {}) => {
+        showPopup = async (mode, defaults = {}, refImg) => {
             popupCancelled = false;
 
-            popup_title.innerHTML = `${MODE_DISPLAY_NAMES[mode]} Settings<br/><small style="font-size: small;">V${VERSION}</small>`;
+            popup_title.innerHTML = `${MODE_DISPLAY_NAMES[mode]} Settings<br><small style="font-size: small;">V${VERSION}</small>`;
 
             popup_guidanceScaleSlider.value = ('guidance_scale' in defaults ? defaults.guidance_scale * 10 : 75);
             popup_guidanceScaleField.value = defaults.guidance_scale || 7.5;
@@ -272,6 +785,9 @@
             switch (mode) {
                 case MODE_REDO:
                     resolution_container.style.display = 'none';
+                    input_surface_container.style.display = 'none';
+                    popup_vram_level_container.style.display = 'none';
+
                     popup_subtitle.innerHTML = 'Redo the current render with small variations.';
                     popup_parallel.value = defaults.num_outputs || defaults.parallel || 1;
                     if (typeof numOutputsTotalField !== "undefined" && numOutputsTotalField.value && parseInt(numOutputsTotalField.value) > 1) {
@@ -279,35 +795,62 @@
                     } else {
                         popup_totalOutputs.value = 4;
                     }
+                    if ("num_inference_steps" in defaults) {
+                        popup_num_inference_steps.value = defaults.num_inference_steps;
+                    }
+
                     if (defaults.init_image) {
                         compoundChanges.checked = true;
                         compoundChanges_container.style.display = 'block';
                     } else {
                         compoundChanges_container.style.display = 'none';
                     }
-                    popup_vram_level_container.style.display = 'none';
-                    if ("num_inference_steps" in defaults) {
-                        popup_num_inference_steps.value = defaults.num_inference_steps;
-                    }
                     break;
                 case MODE_RESIZE:
                     compoundChanges_container.style.display = 'none';
-                    resolution_container.style.display = 'block';
+                    input_surface_container.style.display = 'none';
+
                     popup_subtitle.innerHTML = 'Resize the current render.</br><small>(Will include alterations/mutations.)</small>';
                     popup_parallel.value = 1;
                     popup_totalOutputs.value = 1;
                     popup_scale_slider.value = DEFAULT_SCALE_RATIO;
-                    popup_vram_level_container.style.display = 'block';
+
                     if ("num_inference_steps" in defaults) {
                         popup_num_inference_steps.value = Math.round(defaults.num_inference_steps * (DEFAULT_SCALE_RATIO / 100));
                     }
+
+                    resolution_container.style.display = 'block';
+                    popup_vram_level_container.style.display = 'block';
+                    break;
+                case MODE_WARP:
+                    compoundChanges_container.style.display = 'none';
+
+                    console.log('defaults', defaults);
+                    console.log('refImg', refImg);
+                    popup_scale_slider.value = 101;
+                    if (defaults.width > defaults.height) {
+                        input_surface_canvas.width = SURFACE_MAX_SIZE;
+                        input_surface_canvas.height = SURFACE_MAX_SIZE * (defaults.height / defaults.width);
+                    } else if (defaults.height > defaults.width) {
+                        input_surface_canvas.width = SURFACE_MAX_SIZE * (defaults.width / defaults.height);
+                        input_surface_canvas.height = SURFACE_MAX_SIZE;
+                    } else {
+                        input_surface_canvas.width = SURFACE_MAX_SIZE;
+                        input_surface_canvas.height = SURFACE_MAX_SIZE;
+                    }
+                    input_surface_canvas.image = refImg || defaults.init_image;
+                    popup_warp_slider.value = 100;
+
+                    input_surface_container.style.display = 'block';
+                    resolution_container.style.display = 'block';
+                    popup_vram_level_container.style.display = 'block';
                     break;
             }
             popup_num_inference_steps.value = Math.max(25, popup_num_inference_steps.value);
 
             let width = defaults.width;
-            popup_width.value = round_64(width * (popup_scale_slider.value / 100));
             let height = defaults.height;
+            popup_width.value = round_64(width * (popup_scale_slider.value / 100));
             popup_height.value = round_64(height * (popup_scale_slider.value / 100));
             const setResolutionFields = function() {
                 popup_width.value = round_64(width * (popup_scale_slider.value / 100));
@@ -318,22 +861,68 @@
                 width = popup_width.value / ratio;
                 height = popup_height.value / ratio;
                 popup_scale_slider.value = ratio * 100;
+                if (mode == MODE_WARP) {
+                    if (popup_width.value > popup_height.value) {
+                        input_surface_canvas.width = SURFACE_MAX_SIZE;
+                        input_surface_canvas.height = SURFACE_MAX_SIZE * (popup_height.value / popup_width.value);
+                    } else if (popup_height.value > popup_width.value) {
+                        input_surface_canvas.width = SURFACE_MAX_SIZE * (popup_width.value / popup_height.value);
+                        input_surface_canvas.height = SURFACE_MAX_SIZE;
+                    } else {
+                        input_surface_canvas.width = SURFACE_MAX_SIZE;
+                        input_surface_canvas.height = SURFACE_MAX_SIZE;
+                    }
+                }
             };
-
             const set_width = debounce(function() {
-                const tmp_width = round_64(popup_width.value);
+                let tmp_width = popup_width.value;
+                if (mode == MODE_RESIZE) {
+                    tmp_width = round_64(tmp_width);
+                }
                 if (tmp_width != popup_width.value) {
                     popup_width.value = tmp_width;
                 }
                 setResolutionSlider();
             }, 1000, false);
             const set_height = debounce(function() {
-                const tmp_height = round_64(popup_height.value);
+                let tmp_height = popup_height.value;
+                if (mode == MODE_RESIZE) {
+                    tmp_height = round_64(tmp_height);
+                }
                 if (tmp_height != popup_height.value) {
                     popup_height.value = tmp_height;
                 }
                 setResolutionSlider();
             }, 1000, false);
+
+            popup_warp_width.value = popup_warp_slider.value / 100;
+            popup_warp_height.value = popup_warp_slider.value / 100;
+            input_surface_canvas.reset();
+            const onCanvasChanged = function() {
+                const [ sizeWidth, sizeHeigth ] = input_surface_canvas.size;
+                popup_warp_width.value = sizeWidth.toFixed(2);
+                popup_warp_height.value = sizeHeigth.toFixed(2);
+                const ratio = (sizeWidth + sizeHeigth) / 2;
+                popup_warp_slider.value = ratio * 100;
+            };
+            const setWarpFields = function() {
+                popup_warp_width.value = (popup_warp_slider.value / 100).toFixed(2);
+                popup_warp_height.value = (popup_warp_slider.value / 100).toFixed(2);
+                input_surface_canvas.size = [
+                    popup_warp_slider.value / 100
+                    , popup_warp_slider.value / 100
+                ];
+            };
+            const setWarpSlider = function() {
+                const ratio = (popup_warp_width.value + popup_warp_height.value) / 2;
+                input_surface_canvas.size = [
+                    popup_warp_width.value
+                    , popup_warp_height.value
+                ];
+                popup_warp_slider.value = ratio * 100;
+            };
+            const set_warp_width = debounce(setWarpSlider, 1000, false);
+            const set_warp_height = debounce(setWarpSlider, 1000, false);
 
             popup_prompt.value = defaults.prompt;
 
@@ -341,6 +930,10 @@
                 popup_scale_slider.addEventListener('input', setResolutionFields);
                 popup_width.addEventListener('input', set_width);
                 popup_height.addEventListener('input', set_height);
+                popup_warp_slider.addEventListener('input', setWarpFields);
+                popup_warp_width.addEventListener('input', set_warp_width);
+                popup_warp_height.addEventListener('input', set_warp_height);
+                input_surface_canvas.addEventListener('change', onCanvasChanged);
                 // Display popup
                 popupContainer.style.display = 'block';
                 while (window.getComputedStyle(popupContainer).display !== "none") {
@@ -350,6 +943,10 @@
                 popup_scale_slider.removeEventListener('input', setResolutionFields);
                 popup_width.removeEventListener('input', set_width);
                 popup_height.removeEventListener('input', set_height);
+                popup_warp_slider.removeEventListener('input', setWarpFields);
+                popup_warp_width.removeEventListener('input', set_warp_width);
+                popup_warp_height.removeEventListener('input', set_warp_height);
+                input_surface_canvas.removeEventListener('change', onCanvasChanged);
             }
             const response = {
                 cancelled: popupCancelled
@@ -368,25 +965,30 @@
                 , vram_usage_level: popup_vram_level.value
                 , compoundChanges: compoundChanges.checked
             };
+            if (mode === MODE_WARP) {
+                const result = await input_surface_canvas.render();
+                response.init_image = result.image;
+                response.mask = result.mask;
+            }
             popupCancelled = false;
             return response;
         }
     })();
 
     function getImg(src) {
+        if (src instanceof HTMLImageElement
+            || src instanceof SVGImageElement
+            || src instanceof HTMLCanvasElement
+            || src instanceof ImageBitmap
+        ) {
+            return Promise.resolve(src);
+        }
         return new Promise(function(resolve, reject) {
             try {
-                if (src.data instanceof HTMLImageElement
-                    || src.data instanceof SVGImageElement
-                    || src.data instanceof HTMLCanvasElement
-                    || src.data instanceof ImageBitmap
-                ) {
-                    throw new Error('Not implemtented...')
-                }
                 const image = new Image();
                 image.addEventListener('load', () => resolve(image));
                 image.addEventListener('error', () => reject(new Error('Failed to load image.')));
-                image.src = src.url || src.data;
+                image.src = src;
             } catch (e) {
                 reject(e);
             }
@@ -491,6 +1093,15 @@
                     }
                 }
                 break;
+            case MODE_WARP:
+                newTaskRequest.reqBody.sampler_name = 'ddim';
+                newTaskRequest.reqBody.init_image = options.init_image;
+                if (options.mask) {
+                    newTaskRequest.reqBody.mask = options.mask;
+                } else {
+                    delete newTaskRequest.reqBody.mask;
+                }
+                break;
             default: throw new Error("Unknown button.action mode: " + mode);
         }
         newTaskRequest.seed = newTaskRequest.reqBody.seed;
@@ -499,13 +1110,13 @@
 
     function getStartNewTaskHandler(mode) {
         return async function(reqBody, img) {
-            const options = await showPopup(mode, reqBody);
+            const options = await showPopup(mode, reqBody, img);
             if (options.cancelled) {
                 return;
             }
             const newTaskRequest = buildRequest(mode, reqBody, img, options);
             createTask(newTaskRequest);
-        }
+        };
     }
 
     // Register selftests when loaded by jasmine.
