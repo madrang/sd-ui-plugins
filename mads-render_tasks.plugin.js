@@ -1094,6 +1094,8 @@
                 }
                 break;
             case MODE_WARP:
+                newTaskRequest.reqBody.width = options.width;
+                newTaskRequest.reqBody.height = options.height;
                 newTaskRequest.reqBody.sampler_name = 'ddim';
                 newTaskRequest.reqBody.init_image = options.init_image;
                 if (options.mask) {
