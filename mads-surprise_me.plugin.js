@@ -42,7 +42,9 @@
     const DEFAULT_PROMPT = "a photograph of an astronaut riding a horse";
 
     const editorInputs = document.getElementById("editor-inputs");
+    const START_RULE = "start";
     let ritaGrammar = undefined;
+    let defaultStartRule = undefined;
 
     const buttonsContainer = document.createElement('div');
     buttonsContainer.id = `${ID_PREFIX}-surpriseContainer`;
@@ -163,14 +165,7 @@
     };
 
     //Load RiTa
-    //loadScript('/plugins/user/rita.js')
-    const rita_script = document.createElement('script');
-    rita_script.addEventListener('error', function() {
-        surpriseMeButton.innerHTML = `ERR: Missing rita!`;
-        surpriseMeButton.title = `Make sure that rita.js is present and valid.`;
-        surpriseMeButton.disabled = true;
-    });
-    rita_script.addEventListener('load', async function() {
+    loadScript("/plugins/user/rita.js?v=" + VERSION).then(async function() {
         if (versionCompare(RITA_VERSION, RiTa.VERSION) < 0) {
             const errMsg = `[RiTa.js V${RiTa.VERSION}] Doesn't match expected version ${RITA_VERSION}!`;
             console.error(errMsg);
@@ -247,6 +242,7 @@
             const response = await fetch("/plugins/user/rita_grammar.json?v=" + Date.now());
             const rules = await response.json();
             ritaGrammar = RiTa.grammar(rules);
+            defaultStartRule = rules[START_RULE];
 
             const grammarVersion = ritaGrammar.expand('version');
             if (!grammarVersion) {
@@ -268,28 +264,19 @@
             if (typeof promptField !== 'object' || promptField.value !== DEFAULT_PROMPT) {
                 return;
             }
-            promptField.value = ritaGrammar.expand();
+            promptField.value = ritaGrammar.expand(START_RULE);
         } catch(e) {
             surpriseMeButton.innerHTML = `ERR: Invalid grammar!`;
             surpriseMeButton.title = `Make sure that rita_grammar.json is present and valid.`;
             surpriseMeButton.disabled = true;
             console.error(e);
         }
+    }, function(error) {
+        surpriseMeButton.innerHTML = `ERR: Missing rita!`;
+        surpriseMeButton.title = `Make sure that rita.js is present and valid.`;
+        surpriseMeButton.disabled = true;
     });
-    rita_script.type = 'text/javascript';
-    console.log("Loading rita.js");
-    rita_script.src = "/plugins/user/rita.js?v=" + VERSION;
-    document.head.append(rita_script);
 
-    function round_64(val) {
-        val = Math.round(val);
-        const left = val % 64;
-        val = val - left;
-        if (left >= 32) {
-            return val + 64;
-        }
-        return val;
-    }
     function buildRequest(options = {}) {
         const newTaskRequest = modifyCurrentRequest(getCurrentUserRequest().reqBody, { //TODO remove getCurrentUserRequest after is fixed upstream.
             session_id: sessionId
@@ -300,7 +287,7 @@
         if ('prompt' in options) {
             newTaskRequest.reqBody.prompt = options.prompt;
         } else {
-            newTaskRequest.reqBody.prompt = ritaGrammar.expand();
+            newTaskRequest.reqBody.prompt = ritaGrammar.expand(START_RULE);
         }
         //newTaskRequest.reqBody.sampler = 'euler_a';
         //newTaskRequest.reqBody.sampler = 'ddim';
@@ -318,6 +305,13 @@
             //if (options.cancelled) {
             //    return;
             //}
+            const prompt = promptField?.value;
+            if (prompt && prompt.startsWith("$")) {
+                ritaGrammar.addRule(START_RULE, prompt.slice(1));
+            } else {
+                ritaGrammar.addRule(START_RULE, defaultStartRule);
+            }
+
             const options = {};
             const newTaskRequest = buildRequest(options);
             createTask(newTaskRequest);
