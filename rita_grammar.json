@@ -1,7 +1,9 @@
 {
   "version":           "2.8.31.1"
   , "start":           "$prompt, $modifiers"
-  , "prompt":          "((($attribute [2] |[4]) $subject).art().cap() [4] | The $mythology [2] | $peopleName | $mythName) ($verb [2] | (vbg).rnd()) (($object.nr()|$vegetable.nr()).art()|$energy.nr()) | (($attribute [2] |[4]) $type).art().cap() of $place | $attribute.art().cap() $color ($object|$vegetable) in $place | ! $subject.art().cap() (($color, $emotion [2] | $color [3] | $emotion):(0/0.9:3).rnd()).aug() (($color.nr(), $emotion.nr() [2] | $color.nr() [3] | $emotion.nr()):(0/0.9:3).rnd()).aug() in $place.aug().aug() ($type.dec() |)"
+  , "prompt":          "((($attribute [2] |[4]) $subject).art().cap() [4] | The $mythology [2] | $peopleName | $mythName) ($verb [2] | (vbg).rnd()) (($object.nr()|$vegetable.nr()).art()|$energy.nr()) | (($attribute [2] |[4]) $type).art().cap() of $place | $attribute.art().cap() $color ($object|$vegetable) in $place"
+  , "parsedPrompt":    "! $subject.art().cap() (($color, $emotion [2] | $color [3] | $emotion):(0/0.9:3).rnd()).aug() (($color.nr(), $emotion.nr() [2] | $color.nr() [3] | $emotion.nr()):(0/0.9:3).rnd()).aug() in $place.aug().aug() ($type.dec() |)"
+  , "compelPrompt":    "TODO..."
 
   , "subject":         "$animal [3] | $character [2] | $fictionalEntity[3] | $people | $object[4]"
   , "animal":          "animal | basilisk | bat | bear | bird | boar | cat | chicken | cow | dog | dragon | fish | horse | mouse | penguin | pig | phoenix | rat | snake | unicorn"

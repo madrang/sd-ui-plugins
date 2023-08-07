@@ -285,7 +285,7 @@
                 outputCtx.clearRect(0, 0, reqBody.width, reqBody.height);
                 const renderFrames = [];
 
-                let delay = 99;
+                let delay = 99; // playback time per frame in milliseconds.
                 const advance_step = 2;
                 const rangeStart = 1;
                 const rangeEnd = 99;
