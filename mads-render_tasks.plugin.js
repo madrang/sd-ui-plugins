@@ -46,11 +46,13 @@
 #${ID_PREFIX}-popup > div {
     background: var(--background-color2);
     max-width: 600px;
+    max-height: 90%;
     margin: auto;
-    margin-top: 100px;
+    margin-top: 64px;
     border-radius: 6px;
     padding: 30px;
     text-align: center;
+    overflow: scroll;
 }
 #${ID_PREFIX}-popup-title {
     line-height: 10px;
