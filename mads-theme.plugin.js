@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.19.1";
+    const VERSION = "3.0.0.1";
     const ID_PREFIX = "madrang-plugin";
     const THEME_KEY = 'theme-mads';
     const THEME_NAME = "Mads Theme";
