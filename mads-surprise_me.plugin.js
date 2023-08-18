@@ -18,9 +18,9 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.4.7.4";
+    const VERSION = "3.0.0.1";
     const ID_PREFIX = "madrang-plugin";
-    const RITA_VERSION = "2.8.31.1"
+    const RITA_VERSION = "3.0.0.1"
     console.log('%s SurpriseMe! Version: %s', ID_PREFIX, VERSION);
 
     const style = document.createElement('style');
@@ -278,43 +278,32 @@
     });
 
     function buildRequest(options = {}) {
-        const newTaskRequest = modifyCurrentRequest(getCurrentUserRequest().reqBody, { //TODO remove getCurrentUserRequest after is fixed upstream.
-            session_id: sessionId
-        });
-        //newTaskRequest.reqBody.num_outputs = options.parallel || 1;
-        //newTaskRequest.numOutputsTotal = Math.max(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
-        //newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
-        if ('prompt' in options) {
-            newTaskRequest.reqBody.prompt = options.prompt;
+        const newTaskRequest = modifyCurrentRequest(options);
+        // Load RiTa Rule to use.
+        if (newTaskRequest.reqBody.prompt?.startsWith("$")) {
+            ritaGrammar.addRule(START_RULE, newTaskRequest.reqBody.prompt.slice(1));
         } else {
-            newTaskRequest.reqBody.prompt = ritaGrammar.expand(START_RULE);
+            newTaskRequest.reqBody.original_prompt = "$ " + defaultStartRule;
+            ritaGrammar.addRule(START_RULE, defaultStartRule);
         }
-        //newTaskRequest.reqBody.sampler = 'euler_a';
-        //newTaskRequest.reqBody.sampler = 'ddim';
-        //if ('guidance_scale' in options) {
-        //    newTaskRequest.reqBody.guidance_scale = options.guidance_scale;
-        //}
-        //newTaskRequest.reqBody.width = options.width || round_64(512);
-        //newTaskRequest.reqBody.height = options.height || round_64(512);
-        //newTaskRequest.reqBody.num_inference_steps = Math.min(100, options.num_inference_steps || Math.round(50));
+        // Create a new surprise prompt from RiTa notation.
+        newTaskRequest.reqBody.prompt = ritaGrammar.expand(START_RULE);
         return newTaskRequest;
     }
     function getStartNewTaskHandler() {
         return async function(event) {
             //const options = await showPopup(mode, reqBody);
+            const options = {
+                prompt: promptField?.value
+            };
             //if (options.cancelled) {
             //    return;
             //}
-            const prompt = promptField?.value;
-            if (prompt && prompt.startsWith("$")) {
-                ritaGrammar.addRule(START_RULE, prompt.slice(1));
-            } else {
-                ritaGrammar.addRule(START_RULE, defaultStartRule);
-            }
-
-            const options = {};
             const newTaskRequest = buildRequest(options);
+            console.log("Creating new surprise render task", newTaskRequest);
             createTask(newTaskRequest);
+
+            // Hide ED ReadMe
             initialText.style.display = 'none';
         }
     }
