@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "2.5.13.1";
+    const VERSION = "3.0.0.1";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
@@ -26,24 +26,23 @@
     const MODE_RESIZE = 'img2img_resize';
     const MODE_WARP = 'img2img_warp';
     const MODE_DISPLAY_NAMES = {
-        [MODE_REDO]: "Mad's Redo Vars"
-        , [MODE_RESIZE]: "Mad's Resize"
-        , [MODE_WARP]: "Mad's Warp"
+        [MODE_REDO]: "Redo Vars"
+        , [MODE_RESIZE]: "Resize"
+        , [MODE_WARP]: "Move"
     };
-    Object.keys(MODE_DISPLAY_NAMES).forEach((key) => PLUGINS['IMAGE_INFO_BUTTONS'].push({ text: MODE_DISPLAY_NAMES[key], on_click: getStartNewTaskHandler(key) }))
-
+    PLUGINS['IMAGE_INFO_BUTTONS'].push([
+        { type: "label"
+            , class: [ "imgInfoLabel", "imgSeedLabel" ]
+            , text: "Mad's"
+        }
+        , ...Object.keys(MODE_DISPLAY_NAMES).map((key) => ({
+            text: MODE_DISPLAY_NAMES[key]
+            , on_click: getStartNewTaskHandler(key)
+        }))
+    ]);
     const style = document.createElement('style');
     style.textContent = `
 #${ID_PREFIX}-popup {
-    position: fixed;
-    background: rgba(32, 33, 36, 50%);
-    top: 0px;
-    left: 0px;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1000;
-}
-#${ID_PREFIX}-popup > div {
     background: var(--background-color2);
     max-width: 600px;
     max-height: 90%;
@@ -52,7 +51,7 @@
     border-radius: 6px;
     padding: 30px;
     text-align: center;
-    overflow: scroll;
+    overflow: auto;
 }
 #${ID_PREFIX}-popup-title {
     line-height: 10px;
@@ -117,16 +116,19 @@
         #ctx = undefined;
         constructor() {
             super();
-            // Allow to be focused for keyboard events.
-            this.tabIndex = 0;
+            this.tabIndex = 0; // Allow to be focused for keyboard events.
+            this.style.touchAction = "none"; // Cellphones: Disable default touch actions.
+            const eventOptions = { // addEventListener options
+                capture: true
+                , passive: false
+            };
             // Keyboard Input
-            this.addEventListener('keydown', (event) => this.#onKeyboardInput(event));
-            this.addEventListener('keyup'  , (event) => this.#onKeyboardInput(event));
-            // Mouse Input
-            this.addEventListener('mousedown'     , (event) => this.#onMouseInput(event));
-            this.addEventListener('mousemove'     , (event) => this.#onMouseInput(event));
-            this.addEventListener('mouseup'       , (event) => this.#onMouseInput(event));
-            this.addEventListener('wheel'         , (event) => this.#onMouseInput(event));
+            this.addEventListener('keydown', (event) => this.#onKeyboardInput(event), eventOptions);
+            this.addEventListener('keyup'  , (event) => this.#onKeyboardInput(event), eventOptions);
+            // Pointer/Mouse/Touch Inputs
+            [ "pointerdown", "pointermove", "pointerup"
+                , "wheel"
+            ].forEach((key) => this.addEventListener(key, (event) => this.#onPointerInput(event), eventOptions));
 
             // Update Visual
             //document.addEventListener("focus", redraw, true);
@@ -276,31 +278,39 @@
             event.stopPropagation();
             this.#onChanged();
         }
-        #onMouseInput(event) {
-            //console.log('#onMouseInput', event);
+        #onPointerInput(event) {
+            //console.log('#onPointerInput', event);
             if (this.disabled) {
                 return;
             }
             if (event instanceof WheelEvent || event.type == "wheel") {
                 event.preventDefault();
+                event.stopImmediatePropagation();
                 //event.wheelDeltaX
                 this.size = this.size.map((s) => s + (event.wheelDeltaY / 1000));
                 return false;
             }
-            // mouseup, mousedown, mousemove
+            // mouseup, mousedown, mousemove, touch, pen
             let evButtons = event.buttons;
-            if (event instanceof MouseEvent && event.type == "click" && !evButtons) {
+            if (!evButtons && (event.type == "click" || event.pointerType == "touch" || event.pointerType == "pen")) {
                 evButtons = 1;
             }
             if (!evButtons) {
                 return;
             }
+            if (event.pointerId) {
+                this.setPointerCapture(event.pointerId);
+            }
             if (evButtons === 1) {
+                const surfaceRect = this.getBoundingClientRect();
                 this.offset = [
-                    scale(invlerp(0, this.width, event.pageX - (this.offsetLeft + window.scrollX)), 0, 1, -1, 1)
-                    , scale(invlerp(0, this.height, event.pageY - (this.offsetTop + window.scrollY)), 0, 1, -1, 1)
+                    scale(event.pageX - window.scrollX, surfaceRect.left, surfaceRect.right, -1, 1)
+                    , scale(event.pageY - window.scrollY, surfaceRect.top, surfaceRect.bottom, -1, 1)
                 ];
                 //console.log('offset', this.offset);
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                return false;
             }
         }
 
@@ -578,6 +588,10 @@
     const DEFAULT_SCALE_RATIO = 200;
     const SURFACE_MAX_SIZE = 300;
 
+    const POPUP_INIT = "waiting"
+    const POPUP_OK = "ok";
+    const POPUP_CANCELLED = "cancelled";
+
     const mainContainer = document.getElementById('container');
     // Help and Community links
     const links = document.getElementById("community-links");
@@ -590,11 +604,10 @@
 
     const keepMaxSelect = document.createElement('input');
     keepMaxSelect.id = `${ID_PREFIX}-keep-max`;
-    const popupContainer = document.createElement('div');
+    const popupContainer = document.createElement('dialog');
     popupContainer.id = `${ID_PREFIX}-popup`;
 
-    let popupCancelled = false;
-    let showPopup = async (mode, defaults = {}) => {}
+    let showPopup = (mode, defaults = {}) => Promise.reject(new Error("Failed to create popup."));
     (function() {
         if (links && !document.getElementById(`${ID_PREFIX}-link`)) {
             // Add link to plugin repo.
@@ -669,44 +682,44 @@
             }
         });
 
-        popupContainer.style.display = 'none';
         popupContainer.innerHTML = `
-            <div>
-                <span id="${ID_PREFIX}-popup-close-btn">X</span>
-                <h1 id="${ID_PREFIX}-popup-title">Popup Settings<br><small style="font-size: small;">V${VERSION}</small></h1>
-                <p id="${ID_PREFIX}-popup-subtitle"></p>
-                <label for="${ID_PREFIX}-num_outputs_total">Number of Images:</label> <input id="${ID_PREFIX}-num_outputs_total" name="num_outputs_total" value="1" size="1"> <label><small>(total)</small></label> <input id="${ID_PREFIX}-num_outputs_parallel" name="num_outputs_parallel" value="1" size="1"> <label for="${ID_PREFIX}-num_outputs_parallel"><small>(in parallel)</small></label><br>
-                <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br>
-                <label for="${ID_PREFIX}-num_inference_steps">Inference Steps:</label></td><td> <input id="${ID_PREFIX}-num_inference_steps" name="${ID_PREFIX}-num_inference_steps" size="4" value="25"><br>
-                <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br>
-                <div id="${ID_PREFIX}-warp_input_surface_container"><canvas is="input-surface" id="${ID_PREFIX}-warp_input_surface" name="warp_input_surface" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"></canvas><br>
-                    <label for="${ID_PREFIX}-warp_input_surface">Warp:</label> <input id="${ID_PREFIX}-warp_slider" name="warp_slider" class="editor-slider" value="100" type="range" min="0" max="200"> <input id="${ID_PREFIX}-warp_width" name="width" size="4"> x <input id="${ID_PREFIX}-warp_height" name="height" size="4"><br>
-                </div>
-                <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br></div>
-                <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
-                <div id="${ID_PREFIX}-vram_level_container" title="Faster performance requires more GPU memory (VRAM)"> <label for="${ID_PREFIX}-vram_level">GPU Memory Usage</label> <select id="${ID_PREFIX}-vram_level" name="vram_level"> <option value="high">High</option><option value="balanced">Balanced</option><option value="low">Low</option> </select> </div>
-                <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt"></textarea>
-                <p><small><b>Tip:</b> You can click on the transparent overlay to close </br> and by holding Ctrl quickly Apply. </br> Edit the prompt to control the alterations. </small></p>
-                <button id="${ID_PREFIX}-popup-apply-btn" class="secondaryButton"><i class="fa-solid fa-check"></i> Apply</button>
-            </div>`;
+            <span id="${ID_PREFIX}-popup-close-btn">X</span>
+            <h1 id="${ID_PREFIX}-popup-title">Popup Settings<br><small style="font-size: small;">V${VERSION}</small></h1>
+            <p id="${ID_PREFIX}-popup-subtitle"></p>
+            <label for="${ID_PREFIX}-num_outputs_total">Number of Images:</label> <input id="${ID_PREFIX}-num_outputs_total" name="num_outputs_total" value="1" size="1"> <label><small>(total)</small></label> <input id="${ID_PREFIX}-num_outputs_parallel" name="num_outputs_parallel" value="1" size="1"> <label for="${ID_PREFIX}-num_outputs_parallel"><small>(in parallel)</small></label><br>
+            <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br>
+            <label for="${ID_PREFIX}-num_inference_steps">Inference Steps:</label></td><td> <input id="${ID_PREFIX}-num_inference_steps" name="${ID_PREFIX}-num_inference_steps" size="4" value="25"><br>
+            <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br>
+            <div id="${ID_PREFIX}-warp_input_surface_container"><canvas is="input-surface" id="${ID_PREFIX}-warp_input_surface" name="warp_input_surface" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"></canvas><br>
+                <label for="${ID_PREFIX}-warp_input_surface">Warp:</label> <input id="${ID_PREFIX}-warp_slider" name="warp_slider" class="editor-slider" value="100" type="range" min="0" max="200"> <input id="${ID_PREFIX}-warp_width" name="width" size="4"> x <input id="${ID_PREFIX}-warp_height" name="height" size="4"><br>
+            </div>
+            <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br></div>
+            <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
+            <div id="${ID_PREFIX}-vram_level_container" title="Faster performance requires more GPU memory (VRAM)"> <label for="${ID_PREFIX}-vram_level">GPU Memory Usage</label> <select id="${ID_PREFIX}-vram_level" name="vram_level"> <option value="high">High</option><option value="balanced">Balanced</option><option value="low">Low</option> </select> </div>
+            <p style="text-align: left;">Prompt:</p><textarea id="${ID_PREFIX}-prompt"></textarea>
+            <p><small><b>Tip:</b> You can click on the transparent overlay to close </br> and by holding Ctrl quickly Apply. </br> Edit the prompt to control the alterations. </small></p>
+            <button id="${ID_PREFIX}-popup-apply-btn" class="secondaryButton"><i class="fa-solid fa-check"></i> Apply</button>
+        `;
         mainContainer.insertBefore(popupContainer, document.getElementById('save-settings-config'));
         popupContainer.addEventListener('click', (event) => {
-            if (event.target.id == popupContainer.id) {
-                popupContainer.style.display = 'none';
-                if (!event.ctrlKey) {
-                    popupCancelled = true;
-                }
+            const dialogRect = popupContainer.getBoundingClientRect();
+            const isInDialog = Boolean(
+                dialogRect.top <= event.clientY
+                && event.clientY <= dialogRect.top + dialogRect.height
+                && dialogRect.left <= event.clientX
+                && event.clientX <= dialogRect.left + dialogRect.width
+            );
+            if (!isInDialog && event.target.id == popupContainer.id) {
+                popupContainer.close(event.ctrlKey ? POPUP_OK : POPUP_CANCELLED);
             }
         });
         const closeBtn = document.getElementById(`${ID_PREFIX}-popup-close-btn`);
         closeBtn.addEventListener('click', () => {
-            popupContainer.style.display = 'none';
-            popupCancelled = true;
+            popupContainer.close(POPUP_CANCELLED);
         });
         const applyBtn = document.getElementById(`${ID_PREFIX}-popup-apply-btn`);
         applyBtn.addEventListener('click', () => {
-            popupContainer.style.display = 'none';
-            popupCancelled = false;
+            popupContainer.close(POPUP_OK);
         });
 
         const popup_title = document.getElementById(`${ID_PREFIX}-popup-title`);
@@ -768,7 +781,7 @@
         const popup_vram_level_container = document.getElementById(`${ID_PREFIX}-vram_level_container`);
 
         showPopup = async (mode, defaults = {}, refImg) => {
-            popupCancelled = false;
+            popupContainer.returnValue = POPUP_INIT;
 
             popup_title.innerHTML = `${MODE_DISPLAY_NAMES[mode]} Settings<br><small style="font-size: small;">V${VERSION}</small>`;
 
@@ -937,9 +950,9 @@
                 popup_warp_height.addEventListener('input', set_warp_height);
                 input_surface_canvas.addEventListener('change', onCanvasChanged);
                 // Display popup
-                popupContainer.style.display = 'block';
-                while (window.getComputedStyle(popupContainer).display !== "none") {
-                    await asyncDelay(1000);
+                popupContainer.showModal();
+                while (popupContainer.open) { // Wait for dialog to be closed.
+                    await asyncDelay(1000); // Use await asyncDelay to free up the calling thread for 1 second.
                 }
             } finally {
                 popup_scale_slider.removeEventListener('input', setResolutionFields);
@@ -951,7 +964,7 @@
                 input_surface_canvas.removeEventListener('change', onCanvasChanged);
             }
             const response = {
-                cancelled: popupCancelled
+                returnValue: popupContainer.returnValue
 
                 , parallel: parseInt(popup_parallel.value)
                 , totalOutputs: parseInt(popup_totalOutputs.value)
@@ -972,7 +985,6 @@
                 response.init_image = result.image;
                 response.mask = result.mask;
             }
-            popupCancelled = false;
             return response;
         }
     })();
@@ -1115,7 +1127,7 @@
     function getStartNewTaskHandler(mode) {
         return async function(reqBody, img) {
             const options = await showPopup(mode, reqBody, img);
-            if (options.cancelled) {
+            if (options.returnValue !== POPUP_OK) {
                 return;
             }
             const newTaskRequest = buildRequest(mode, reqBody, img, options);
