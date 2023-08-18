@@ -80,6 +80,9 @@
 .${THEME_KEY} ::-webkit-scrollbar-thumb {
     background: var(--background-color3) !important;
 }
+.${THEME_KEY} ::-webkit-scrollbar-corner {
+    background-color: transparent;
+}
 `;
     document.head.append(style);
     (function() {
