@@ -37,6 +37,7 @@
         }
         , ...Object.keys(MODE_DISPLAY_NAMES).map((key) => ({
             text: MODE_DISPLAY_NAMES[key]
+            , filter: () => isTaskSupported(key)
             , on_click: getStartNewTaskHandler(key)
         }))
     ]);
@@ -608,6 +609,7 @@
     popupContainer.id = `${ID_PREFIX}-popup`;
 
     let showPopup = (mode, defaults = {}) => Promise.reject(new Error("Failed to create popup."));
+    let isCustomCanvasSupported = () => false;
     (function() {
         if (links && !document.getElementById(`${ID_PREFIX}-link`)) {
             // Add link to plugin repo.
@@ -780,6 +782,9 @@
         const popup_vram_level = document.getElementById(`${ID_PREFIX}-vram_level`);
         const popup_vram_level_container = document.getElementById(`${ID_PREFIX}-vram_level_container`);
 
+        // Custom html elements can't be extended and won't have those functions on WebKit.
+        isCustomCanvasSupported = () => Boolean(typeof input_surface_canvas.reset === "function");
+
         showPopup = async (mode, defaults = {}, refImg) => {
             popupContainer.returnValue = POPUP_INIT;
 
@@ -912,7 +917,9 @@
 
             popup_warp_width.value = popup_warp_slider.value / 100;
             popup_warp_height.value = popup_warp_slider.value / 100;
-            input_surface_canvas.reset();
+            if (isCustomCanvasSupported()) {
+                input_surface_canvas.reset();
+            }
             const onCanvasChanged = function() {
                 const [ sizeWidth, sizeHeigth ] = input_surface_canvas.size;
                 popup_warp_width.value = sizeWidth.toFixed(2);
@@ -1124,6 +1131,12 @@
         return newTaskRequest;
     }
 
+    function isTaskSupported(mode) {
+        if (mode === MODE_WARP) {
+            return isCustomCanvasSupported();
+        }
+        return true;
+    }
     function getStartNewTaskHandler(mode) {
         return async function(reqBody, img) {
             const options = await showPopup(mode, reqBody, img);
