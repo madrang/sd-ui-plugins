@@ -1,0 +1,12 @@
+[
+    { "id": "madrang-repository", "type": "repository"
+        , "author": "Madrang"
+        , "url": "https://raw.githubusercontent.com/madrang/sd-ui-plugins/beta/mads-plugins.json"
+        , "link": "https://github.com/madrang/sd-ui-plugins/tree/master"
+    }
+    , { "id": "patrice-repository", "type": "repository"
+        , "author": "Patrice"
+        , "url": "https://raw.githubusercontent.com/patriceac/Easy-Diffusion-Plugins/main/"
+        , "link": "https://github.com/patriceac/Easy-Diffusion-Plugins/tree/main"
+    }
+]

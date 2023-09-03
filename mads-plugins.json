@@ -1,0 +1,64 @@
+[
+    { "id": "plugin-manager", "type": "client/plugin"
+        , "name": "Plugin Manager"
+        , "icon": "cubes-stacked"
+        , "description": "Plugin Manager entry for updates notifications."
+        , "author": "Madrang, Patrice"
+        , "url": "https://raw.githubusercontent.com/madrang/sd-ui-plugins/{RELEASE}/{FILE}"
+        , "releases": [ "beta", "master" ]
+        , "files": {
+            "plugin-manager.plugin.js": "javascript"
+            , "plugin-manager-database.js": "javascript"
+            , "plugin-manager-worker.js": "javascript"
+        }
+        , "version": "3.0.3.1"
+        , "localInstallOnly": true
+        , "minEDVersion": "2.0"
+        , "compatIssueIds": []
+    }
+    , { "id": "mads-render-tasks", "type": "client/plugin"
+        , "name": "Mad's Render Tasks"
+        , "icon": "cubes-stacked"
+        , "description": "Adds Redo (a make similar with a prompt to change the options) and Resize. The legend says there are certain plugins that change the way you work, and that is one of those. 🤷\n\n<b>Beta is untested and is still WIP. Main has more testing but may not have all features available while they are still under test.</b>"
+        , "description-alt": "Adds Redo (a make similar with a prompt to change the options), Resize, and \"Warp\" that allows to crop, resize and zoom all in one render operation. The legend says there are certain plugins that change the way you work, and that is one of those. 🤷\n\n<b>Beta is untested and is still WIP. Main has more testing but may not have all features available while they are still under test.</b>"
+        , "author": "Madrang"
+        , "url": "https://raw.githubusercontent.com/madrang/sd-ui-plugins/{RELEASE}/mads-render_tasks.plugin.js"
+        , "releases": [ "master", "beta" ]
+        , "minEDVersion": "2.0"
+        , "compatIssueIds": []
+    }
+    , { "id": "mads-grid"
+        , "name": "Grid Renders (Beta)"
+        , "icon": ""
+        , "description": "Make Grids"
+        , "url": "https://raw.githubusercontent.com/madrang/sd-ui-plugins/{RELEASE}/mads-grid.plugin.js"
+        , "releases": [ "master", "beta" ]
+        , "minEDVersion": "2.0"
+        , "author": "Madrang"
+    }
+    , { "id": "mads-gifs"
+        , "name": "GIFs Plugin (Beta)"
+        , "icon": ""
+        , "description": "Here's the first test version for making GIFs\nUsing the Beta version of the UI is required for now.\n\nAfter installing, you will have new Output Format\nWhile stepAnim display in the normal place, gif needs popup permissions as it will create a new tab/window when completing a render.\n\nMaking a popup UI with more options is still on the To-Do list...\nTo edit the options the code has to be changed until the UI part is done.\n\nGoing above 100 inferences steps with stepAnim is risky on SD1.# as some of those values will fail but it works perfectly with SD2.# models."
+        , "url": "https://raw.githubusercontent.com/madrang/sd-ui-plugins/{RELEASE}/{FILE}"
+        , "files": {
+            "mads-gifs.plugin.js": "javascript"
+            , "gif.js": "javascript"
+            , "gif.worker.js": "javascript"
+        }
+        , "releases": [ "master", "beta" ]
+        , "link": "https://discord.com/channels/1014774730907209781/1051459256769073193/1051459256769073193"
+        , "minEDVersion": "2.0"
+        , "author": "Madrang"
+    }
+
+    , { "id": "EasyDiffusion-parser", "type": "host/plugin"
+        , "icon": ""
+        , "name": "Easy Diffusion Parser"
+        , "description": "An advanced parser for Easy Diffusion with support for blending and weights.\n\nYou'll need to start your prompts with an exclamation mark, e.g. !photo of an (astronaut) to use the advanced syntax. Without ! it will send the text literally to the model."
+        , "link": "https://discord.com/channels/1014774730907209781/1079856801304023061/1079856801304023061"
+        , "localInstallOnly": true
+        , "minEDVersion": "2.0"
+        , "author": "Madrang"
+    }
+]
