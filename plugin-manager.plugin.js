@@ -295,44 +295,6 @@
 
     loadScript("/plugins/user/plugin-manager-database.js").then(function () {
         let PLUGIN_MODE = "local";
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("/plugins/user/plugin-manager-worker.js?t=" + Date.now(), {
-                scope: "/plugins/user/"
-            }).then((registration) => {
-                console.log("ServiceWorker registration", registration);
-                let serviceWorker;
-                if (registration.installing) {
-                    serviceWorker = registration.installing;
-                    console.log("installing", serviceWorker);
-                } else if (registration.waiting) {
-                    serviceWorker = registration.waiting;
-                    console.log("waiting", serviceWorker);
-                } else if (registration.active) {
-                    serviceWorker = registration.active;
-                    console.log("active", serviceWorker);
-                    //PLUGIN_MODE = "serviceWorker"; //TODO Enable when included in core
-                    setTimeout(initPlugins, 0);
-                    return;
-                }
-                if (serviceWorker) {
-                    console.log("Worker State", serviceWorker.state);
-                    serviceWorker.addEventListener("statechange", (event) => {
-                        console.log("Worker State Change", event.target.state);
-                        if (event.target.state == "activated") {
-                            //PLUGIN_MODE = "serviceWorker"; //TODO Enable when included in core
-                            setTimeout(initPlugins, 0);
-                        }
-                    });
-                }
-            }, (error) => { // Something went wrong during registration.
-                // The service-worker.js file might be unavailable or contains the wrong content.
-                console.error(error);
-            });
-        } else {
-            console.error("serviceWorker API unavailable.");
-            setTimeout(initPlugins, 0);
-            //TODO Monkey patch fetch to override plugin content download.
-        }
 
         /* plugin tab */
         //document.querySelector('.tab-container #tab-news')?.insertAdjacentHTML('beforebegin', `
@@ -511,6 +473,11 @@
         });
 
         function showPluginToast(message, duration = 5000, error = false, addNotification = true) {
+            if (error) {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
             if (addNotification) {
                 addPluginNotification(message, error);
                 notificationPill.style.display = "block";
@@ -637,14 +604,18 @@
                 }
 
                 // manual install event handler
-                if (pluginManualInstall) {
-                    pluginManualInstall.addEventListener("click", async () => {
-                        pluginDialogOpenDialog(inputOK, inputCancel)
-                        pluginDialogTextarea.value = plugin.code ? plugin.code : '';
-                        pluginDialogTextarea.select();
-                        pluginDialogTextarea.focus();
-                    });
-                }
+                pluginManualInstall?.addEventListener("click", async () => {
+                    showPopup().then((popupResult) => {
+                        if (popupResult?.returnValue !== POPUP_OK) {
+                            return;
+                        }
+                        popupResult.response
+                    }, (reason) => {});
+                    pluginDialogOpenDialog(inputOK, inputCancel)
+                    pluginDialogTextarea.value = plugin.code ? plugin.code : '';
+                    pluginDialogTextarea.select();
+                    pluginDialogTextarea.focus();
+                });
                 // Dialog OK
                 async function inputOK() {
                     let pluginSource = pluginDialogTextarea.value
@@ -652,11 +623,9 @@
                     //plugin.code = pluginSource
                     if (pluginSource.trim()) {
                         plugin.enabled = true
-                        console.log(`Plugin ${plugin.name} installed`);
                         showPluginToast(`Plugin ${plugin.name} installed`);
                     } else {
                         plugin.enabled = false
-                        console.log(`No code provided for plugin ${plugin.name}, disabling the plugin`);
                         showPluginToast(`No code provided for plugin ${plugin.name}, disabling the plugin`);
                     }
                     updateManualInstallButtonCaption()
@@ -907,8 +876,7 @@
                     await loadScript(`${PLUGIN_ROOT}${pluginFileName}`);
                     return true;
                 } catch (err) {
-                    console.error(`Error loading plugin ${plugin.name}: ${err.message}`);
-                    showPluginToast(`Error loading plugin ${plugin.name} (${err.message})`, null, true);
+                    showPluginToast(`Error loading plugin ${plugin.name} (${err.message})`, undefined, true);
                     return false;
                 }
             }
@@ -940,8 +908,8 @@
                 updateMetaTagPlugins(plugin);
                 return loaded;
             } catch (error) {
-                showPluginToast(`Error loading plugin ${plugin.name} Failed to load ${contentName} (${error})`, null, true);
                 console.error(error);
+                showPluginToast(`Error loading plugin ${plugin.name} Failed to load ${contentName} (${error})`, null, true);
             }
             return false;
         }
@@ -1199,6 +1167,46 @@
                 return true;
             });
             return filteredPlugins;
+        }
+
+        // Initialize plugin
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/plugins/user/plugin-manager-worker.js?t=" + Date.now(), {
+                scope: "/plugins/user/"
+            }).then((registration) => {
+                console.log("ServiceWorker registration", registration);
+                let serviceWorker;
+                if (registration.installing) {
+                    serviceWorker = registration.installing;
+                    console.log("installing", serviceWorker);
+                } else if (registration.waiting) {
+                    serviceWorker = registration.waiting;
+                    console.log("waiting", serviceWorker);
+                } else if (registration.active) {
+                    serviceWorker = registration.active;
+                    console.log("active", serviceWorker);
+                    //PLUGIN_MODE = "serviceWorker"; //TODO Enable when included in core
+                    setTimeout(initPlugins, 0);
+                    return;
+                }
+                if (serviceWorker) {
+                    console.log("Worker State", serviceWorker.state);
+                    serviceWorker.addEventListener("statechange", (event) => {
+                        console.log("Worker State Change", event.target.state);
+                        if (event.target.state == "activated") {
+                            //PLUGIN_MODE = "serviceWorker"; //TODO Enable when included in core
+                            setTimeout(initPlugins, 0);
+                        }
+                    });
+                }
+            }, (error) => { // Something went wrong during registration.
+                // The service-worker.js file might be unavailable or contains the wrong content.
+                console.error(error);
+            });
+        } else {
+            console.error("serviceWorker API unavailable.");
+            setTimeout(initPlugins, 0);
+            //TODO Monkey patch fetch to override plugin content download.
         }
     }, function() {
         // plugin-manager-database.js missing or corrupted content.
