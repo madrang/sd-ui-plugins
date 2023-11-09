@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "3.0.0.1";
+    const VERSION = "3.0.0.3";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
@@ -137,7 +137,7 @@
             this.#onChanged();
 
             // get context
-            this.#ctx = this.getContext('2d');
+            this.#ctx = this.getContext('2d', { willReadFrequently: true });
         }
 
         get disabled() {
@@ -559,7 +559,7 @@
                 Math.round(curImg.width / this.size[0])
                 , Math.round(curImg.height / this.size[1])
             );
-            const ctx = offscreeCanvas.getContext('2d');
+            const ctx = offscreeCanvas.getContext('2d', { willReadFrequently: true });
 
             // Clear canvas surface.
             ctx.clearRect(0, 0, curImg.width, curImg.height);
@@ -689,6 +689,7 @@
             <h1 id="${ID_PREFIX}-popup-title">Popup Settings<br><small style="font-size: small;">V${VERSION}</small></h1>
             <p id="${ID_PREFIX}-popup-subtitle"></p>
             <label for="${ID_PREFIX}-num_outputs_total">Number of Images:</label> <input id="${ID_PREFIX}-num_outputs_total" name="num_outputs_total" value="1" size="1"> <label><small>(total)</small></label> <input id="${ID_PREFIX}-num_outputs_parallel" name="num_outputs_parallel" value="1" size="1"> <label for="${ID_PREFIX}-num_outputs_parallel"><small>(in parallel)</small></label><br>
+            <label for="${ID_PREFIX}-diffusion_model">Model:</label> <input id="${ID_PREFIX}-diffusion_model" type="text" spellcheck="false" autocomplete="off" class="model-filter model-selector" data-path="dreamshaperXL10_alpha2Xl10" style="width: 280px;"><br>
             <label for="${ID_PREFIX}-guidance_scale_slider">Guidance Scale:</label> <input id="${ID_PREFIX}-guidance_scale_slider" name="guidance_scale_slider" class="editor-slider" value="75" type="range" min="10" max="500"> <input id="${ID_PREFIX}-guidance_scale" name="guidance_scale" size="4"><br>
             <label for="${ID_PREFIX}-num_inference_steps">Inference Steps:</label></td><td> <input id="${ID_PREFIX}-num_inference_steps" name="${ID_PREFIX}-num_inference_steps" size="4" value="25"><br>
             <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br>
@@ -781,13 +782,12 @@
 
         const popup_vram_level = document.getElementById(`${ID_PREFIX}-vram_level`);
         const popup_vram_level_container = document.getElementById(`${ID_PREFIX}-vram_level_container`);
+        const popup_diffusionModelField = new ModelDropdown(document.getElementById(`${ID_PREFIX}-diffusion_model`), "stable-diffusion");
 
         // Custom html elements can't be extended and won't have those functions on WebKit.
         isCustomCanvasSupported = () => Boolean(typeof input_surface_canvas.reset === "function");
 
-        showPopup = async (mode, defaults = {}, refImg) => {
-            popupContainer.returnValue = POPUP_INIT;
-
+        const setupPopup = (mode, defaults = {}, refImg) => {
             popup_title.innerHTML = `${MODE_DISPLAY_NAMES[mode]} Settings<br><small style="font-size: small;">V${VERSION}</small>`;
 
             popup_guidanceScaleSlider.value = ('guidance_scale' in defaults ? defaults.guidance_scale * 10 : 75);
@@ -946,53 +946,76 @@
             const set_warp_width = debounce(setWarpSlider, 1000, false);
             const set_warp_height = debounce(setWarpSlider, 1000, false);
 
+            popup_diffusionModelField.value = defaults.use_stable_diffusion_model || stableDiffusionModelField.value;
             popup_prompt.value = defaults.prompt;
 
-            try {
-                popup_scale_slider.addEventListener('input', setResolutionFields);
-                popup_width.addEventListener('input', set_width);
-                popup_height.addEventListener('input', set_height);
-                popup_warp_slider.addEventListener('input', setWarpFields);
-                popup_warp_width.addEventListener('input', set_warp_width);
-                popup_warp_height.addEventListener('input', set_warp_height);
-                input_surface_canvas.addEventListener('change', onCanvasChanged);
-                // Display popup
-                popupContainer.showModal();
-                while (popupContainer.open) { // Wait for dialog to be closed.
-                    await asyncDelay(1000); // Use await asyncDelay to free up the calling thread for 1 second.
+            popup_scale_slider.addEventListener('input', setResolutionFields);
+            popup_width.addEventListener('input', set_width);
+            popup_height.addEventListener('input', set_height);
+            popup_warp_slider.addEventListener('input', setWarpFields);
+            popup_warp_width.addEventListener('input', set_warp_width);
+            popup_warp_height.addEventListener('input', set_warp_height);
+            input_surface_canvas.addEventListener('change', onCanvasChanged);
+
+            return Object.defineProperties({
+                remove() {
+                    popup_scale_slider.removeEventListener('input', setResolutionFields);
+                    popup_width.removeEventListener('input', set_width);
+                    popup_height.removeEventListener('input', set_height);
+                    popup_warp_slider.removeEventListener('input', setWarpFields);
+                    popup_warp_width.removeEventListener('input', set_warp_width);
+                    popup_warp_height.removeEventListener('input', set_warp_height);
+                    input_surface_canvas.removeEventListener('change', onCanvasChanged);
                 }
-            } finally {
-                popup_scale_slider.removeEventListener('input', setResolutionFields);
-                popup_width.removeEventListener('input', set_width);
-                popup_height.removeEventListener('input', set_height);
-                popup_warp_slider.removeEventListener('input', setWarpFields);
-                popup_warp_width.removeEventListener('input', set_warp_width);
-                popup_warp_height.removeEventListener('input', set_warp_height);
-                input_surface_canvas.removeEventListener('change', onCanvasChanged);
-            }
-            const response = {
-                returnValue: popupContainer.returnValue
+            }, {
+                returnValue: {
+                        get: async () => {
+                        const response = {
+                            parallel: parseInt(popup_parallel.value)
+                            , totalOutputs: parseInt(popup_totalOutputs.value)
 
-                , parallel: parseInt(popup_parallel.value)
-                , totalOutputs: parseInt(popup_totalOutputs.value)
+                            , prompt: popup_prompt.value
+                            , prompt_strength: parseFloat(popup_promptStrengthField.value)
+                            , guidance_scale: parseFloat(popup_guidanceScaleField.value)
+                            , num_inference_steps: parseInt(popup_num_inference_steps.value)
 
-                , prompt: popup_prompt.value
-                , prompt_strength: parseFloat(popup_promptStrengthField.value)
-                , guidance_scale: parseFloat(popup_guidanceScaleField.value)
-                , num_inference_steps: parseInt(popup_num_inference_steps.value)
+                            , width: round_64(popup_width.value)
+                            , height: round_64(popup_height.value)
 
-                , width: round_64(popup_width.value)
-                , height: round_64(popup_height.value)
+                            , diffusion_model: popup_diffusionModelField.value
 
-                , vram_usage_level: popup_vram_level.value
-                , compoundChanges: compoundChanges.checked
-            };
-            if (mode === MODE_WARP) {
-                const result = await input_surface_canvas.render();
-                response.init_image = result.image;
-                response.mask = result.mask;
-            }
-            return response;
+                            , vram_usage_level: popup_vram_level.value
+                            , compoundChanges: compoundChanges.checked
+                        };
+                        if (mode === MODE_WARP) {
+                            const result = await input_surface_canvas.render();
+                            response.init_image = result.image;
+                            response.mask = result.mask;
+                        }
+                        return response;
+                    }
+                }
+            });
+        };
+
+        showPopup = (...args) => {
+            return new Promise((resolve, reject) => {
+                popupContainer.returnValue = POPUP_INIT;
+                const popupSetup = setupPopup(...args);
+                popupContainer.addEventListener("close", async () => {
+                    try {
+                        const retVal = { returnValue: popupContainer.returnValue };
+                        if (retVal.returnValue === POPUP_OK) {
+                            retVal.response = await popupSetup.returnValue;
+                        }
+                        resolve(retVal);
+                    } catch (err) {
+                        reject(err);
+                    }
+                    popupSetup.remove();
+                }, { once: true });
+                popupContainer.showModal();
+            });
         }
     })();
 
@@ -1049,7 +1072,7 @@
     }
     async function goBig(img) {
         const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
         const newTaskRequest = modifyCurrentRequest(reqBody, {
             num_outputs: options.parallel || 1
@@ -1077,6 +1100,8 @@
     function buildRequest(mode, reqBody, img, options = {}) {
         const newTaskRequest = modifyCurrentRequest(reqBody, {
             num_outputs: options.parallel || 1
+            , prompt_strength: options.prompt_strength || 0.5
+            , num_inference_steps: options.num_inference_steps || 25
         });
         newTaskRequest.numOutputsTotal = Math.max(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
         newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);
@@ -1089,8 +1114,9 @@
         if ('vram_usage_level' in options) {
             newTaskRequest.reqBody.vram_usage_level = options.vram_usage_level;
         }
-        newTaskRequest.reqBody.prompt_strength = options.prompt_strength || 0.5;
-        newTaskRequest.reqBody.num_inference_steps = options.num_inference_steps || 25;
+        if (options.diffusion_model) {
+            newTaskRequest.reqBody.use_stable_diffusion_model = options.diffusion_model;
+        }
         switch (mode) {
             case MODE_REDO:
             case MODE_RESIZE:
@@ -1139,11 +1165,11 @@
     }
     function getStartNewTaskHandler(mode) {
         return async function(reqBody, img) {
-            const options = await showPopup(mode, reqBody, img);
-            if (options.returnValue !== POPUP_OK) {
+            const popupResult = await showPopup(mode, reqBody, img);
+            if (popupResult?.returnValue !== POPUP_OK) {
                 return;
             }
-            const newTaskRequest = buildRequest(mode, reqBody, img, options);
+            const newTaskRequest = buildRequest(mode, reqBody, img, popupResult.response);
             createTask(newTaskRequest);
         };
     }
