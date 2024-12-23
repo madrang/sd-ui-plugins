@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "3.0.1.1";
+    const VERSION = "3.0.1.2";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
@@ -288,19 +288,7 @@
                 event.preventDefault();
                 event.stopImmediatePropagation();
                 //event.wheelDeltaX
-                this.size = this.size.map((s) => {
-                    let newSize = s + (event.wheelDeltaY / 1000);
-                    if (Math.abs(newSize) < 0.01) {
-                        newSize = 0.01 * Math.sign(newSize);
-                    }
-                    if (Math.abs(newSize) < 0.009) {
-                        newSize = 0.01;
-                    }
-                    if (Math.abs(newSize) > 8) {
-                        newSize = 8 * Math.sign(newSize);
-                    }
-                    return newSize;
-                });
+                this.size = this.size.map((s) => clamp(s + (event.wheelDeltaY / 1000), 0.01, 8));
                 return false;
             }
             // mouseup, mousedown, mousemove, touch, pen
@@ -728,7 +716,7 @@
             <label for="${ID_PREFIX}-num_inference_steps">Inference Steps:</label></td><td> <input id="${ID_PREFIX}-num_inference_steps" name="${ID_PREFIX}-num_inference_steps" size="4" value="25"><br>
             <label for="${ID_PREFIX}-prompt_strength_slider">Prompt Strength:</label> <input id="${ID_PREFIX}-prompt_strength_slider" name="prompt_strength_slider" class="editor-slider" value="50" type="range" min="0" max="99"> <input id="${ID_PREFIX}-prompt_strength" name="prompt_strength" size="4"><br>
             <div id="${ID_PREFIX}-warp_input_surface_container"><canvas is="input-surface" id="${ID_PREFIX}-warp_input_surface" name="warp_input_surface" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"></canvas><br>
-                <label for="${ID_PREFIX}-warp_input_surface">Warp:</label> <input id="${ID_PREFIX}-warp_slider" name="warp_slider" class="editor-slider" value="100" type="range" min="1" max="200"> <input id="${ID_PREFIX}-warp_width" name="width" size="4"> x <input id="${ID_PREFIX}-warp_height" name="height" size="4"><br>
+                <label for="${ID_PREFIX}-warp_input_surface">Warp:</label> <input id="${ID_PREFIX}-warp_slider" name="warp_slider" class="editor-slider" value="100" type="range" min="1" max="300"> <input id="${ID_PREFIX}-warp_width" name="width" size="4"> x <input id="${ID_PREFIX}-warp_height" name="height" size="4"><br>
             </div>
             <div id="${ID_PREFIX}-resolution_container"><label for="${ID_PREFIX}-scale_slider">Resolution:</label> <input id="${ID_PREFIX}-scale_slider" name="scale_slider" class="editor-slider" value="${DEFAULT_SCALE_RATIO}" type="range" min="101" max="300"> <input id="${ID_PREFIX}-width" name="width" size="4"> x <input id="${ID_PREFIX}-height" name="height" size="4"><br></div>
             <div id="${ID_PREFIX}-compoundChanges_container" title="Keep the alterations done to this result, without use the original"> <input id="${ID_PREFIX}-compoundChanges" name="compoundChanges" type="checkbox" checked="true"> <label for="${ID_PREFIX}-compoundChanges">Compound changes </label> </div>
