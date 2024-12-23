@@ -133,6 +133,7 @@
         PLUGINS['OUTPUTS_FORMATS'].register(function gif() {
             return (reqBody) => {
                 reqBody.stream_image_progress = true;
+                reqBody.stream_image_progress_interval = 1;
                 const instance = new SD.RenderTask(reqBody)
                 const enqueue = instance.enqueue
                 const gif = new GIF({

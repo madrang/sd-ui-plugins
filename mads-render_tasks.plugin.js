@@ -18,7 +18,7 @@
  */
 (function() { "use strict"
     const GITHUB_PAGE = "https://github.com/madrang/sd-ui-plugins"
-    const VERSION = "3.0.0.3";
+    const VERSION = "3.0.1.0";
     const ID_PREFIX = "madrang-plugin";
     console.log('%s render tasks Version: %s', ID_PREFIX, VERSION);
 
@@ -601,7 +601,7 @@
     // Tools menu hidden by defaults, shows when tasks are added.
     const toolsMenu = document.getElementById("preview-tools");
     // List of render tasks
-    const preview = document.getElementById("preview");
+    const previewContent = document.getElementById("preview-content");
 
     const keepMaxSelect = document.createElement('input');
     keepMaxSelect.id = `${ID_PREFIX}-keep-max`;
@@ -678,7 +678,7 @@
                         if (taskContainers.indexOf(imageTask) < keep) {
                             continue;
                         }
-                        preview.removeChild(imageTask);
+                        previewContent.removeChild(imageTask);
                     }
                 }, 10 * 1000);
             }
@@ -1102,6 +1102,7 @@
             num_outputs: options.parallel || 1
             , prompt_strength: options.prompt_strength || 0.5
             , num_inference_steps: options.num_inference_steps || 25
+            , preserve_init_image_color_profile: true
         });
         newTaskRequest.numOutputsTotal = Math.max(newTaskRequest.reqBody.num_outputs, options.totalOutputs || 1);
         newTaskRequest.batchCount = Math.ceil(newTaskRequest.numOutputsTotal / newTaskRequest.reqBody.num_outputs);

@@ -300,6 +300,10 @@
             //    return;
             //}
             const newTaskRequest = buildRequest(options);
+            if (event.ctrlKey && typeof promptField === "object") {
+                promptField.value = newTaskRequest.reqBody.prompt.trim();
+                return;
+            }
             console.log("Creating new surprise render task", newTaskRequest);
             createTask(newTaskRequest);
 

@@ -372,7 +372,7 @@
             notificationPill.style.display = "none";
             // Update content
             const PLUGIN_DB = await PLUGIN_DB_PROMISE;
-            const notifications = await idb_selectData(PLUGIN_DB, 'notifications', (val) => val);
+            const notifications = await idb_selectData(PLUGIN_DB, "notifications", (val) => val);
             notifications.sort((a, b) => b.date - a.date);
             renderPluginNotifications(notifications);
             // Remove all unread flags and save.
@@ -707,7 +707,8 @@
         const initPlugins = debounce(async (refreshPlugins = false) => {
             checkNewNotifications();
 
-            if (refreshPlugins && refreshAllowed()) {
+            const refresh = Boolean(refreshPlugins && refreshAllowed());
+            if (refresh) {
                 try {
                     await updateRepository({ name: PLUGIN_CATALOG_FILE
                         , url: PLUGIN_ROOT + PLUGIN_CATALOG_FILE
@@ -734,7 +735,9 @@
                     continue; // Ignore plugins that aren't locally installed
                 }
                 plugin.installedLocally = true;
-                if (plugin.id == "plugin-manager") {
+                if (!refresh) {
+                    // plugin.updatePending //TODO
+                } else if (plugin.id == "plugin-manager") {
                     try {
                         plugin.updatePending = await updatePlugin(plugin, { dryRun: true
                             , getContent: async (contentDescriptor) => {
@@ -784,6 +787,7 @@
             await idb_putData(PLUGIN_DB, "settings", {
                 sectionName: "plugins"
                 , installed: installedPlugins
+                // plugin.updatePending //TODO
                 , lastAvailable: pluginCatalog.map((plugin) => plugin.id)
             });
 
